@@ -373,6 +373,154 @@ body {
   padding: 32px 16px;
 }
 
+.hud-city {
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-top: 4px;
+  opacity: 0.95;
+}
+
+/* ---------- Welt-Tab ---------- */
+
+.prestige-card {
+  background: var(--c-card);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.prestige-card h2 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.prestige-desc {
+  font-size: 0.85rem;
+  color: var(--c-ink-soft);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.prestige-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.prestige-stat {
+  flex: 1;
+  background: var(--c-bg);
+  border-radius: 12px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prestige-stat span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--c-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.prestige-stat b {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.modal-btn:disabled {
+  background: var(--c-disabled);
+  box-shadow: 0 4px 0 #c3b7a9;
+  cursor: not-allowed;
+}
+
+.modal-btn--ghost {
+  background: transparent;
+  color: var(--c-ink-soft);
+  box-shadow: none;
+}
+
+.prestige-hint {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+  margin-top: 10px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--c-ink-soft);
+  margin: 4px 0 -6px;
+}
+
+.city-map {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--c-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.city-stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 0 10px;
+  padding: 6px 4px;
+  border-radius: 12px;
+}
+
+.city-stop--current {
+  background: #fff1dc;
+}
+
+.city-stop--locked {
+  opacity: 0.5;
+}
+
+.city-flag {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.city-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.city-bonus {
+  grid-column: 2;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--c-ink-soft);
+}
+
+.city-truck {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-size: 1.3rem;
+}
+
+.city-link {
+  width: 3px;
+  height: 12px;
+  margin-left: 22px;
+  background: #eadfd2;
+  border-radius: 2px;
+}
+
+.buy-btn--off {
+  background: var(--c-disabled);
+  box-shadow: 0 4px 0 #c3b7a9;
+}
+
 /* ---------- Settings-Button ---------- */
 
 .settings-btn {

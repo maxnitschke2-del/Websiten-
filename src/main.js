@@ -4,6 +4,7 @@ import './style.css';
 import { state } from './core/gameState.js';
 import { startLoop, onTick, onRender } from './core/gameLoop.js';
 import { getTotalIncome, earn } from './systems/production.js';
+import { autoBuyTick } from './systems/automation.js';
 import {
   load,
   save,
@@ -14,9 +15,17 @@ import { initUI, render, showWelcomeBack } from './ui/render.js';
 
 const offline = load();
 
+let autoBuyTimer = 0;
+
 onTick((dt) => {
   earn(state, getTotalIncome(state) * dt);
   state.stats.playtimeMs += dt * 1000;
+
+  autoBuyTimer += dt;
+  if (autoBuyTimer >= 1) {
+    autoBuyTimer = 0;
+    autoBuyTick(state);
+  }
 });
 
 onRender((dt) => render(dt));

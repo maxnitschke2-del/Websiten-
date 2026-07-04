@@ -16,7 +16,22 @@ import {
   buyUpgrade,
 } from '../systems/costScaling.js';
 import { getVisibleGenerators, getVisibleUpgrades } from '../systems/unlocks.js';
-import { exportSave, importSave, hardReset } from '../core/save.js';
+import {
+  getFameGain,
+  getFameMultiplier,
+  canPrestige,
+  doPrestige,
+  getCurrentCity,
+  getNextCity,
+  FAME_MULT_PER_POINT,
+} from '../systems/prestige.js';
+import {
+  canUnlockAutoBuyer,
+  unlockAutoBuyer,
+  AUTO_BUYER_FAME_COST,
+} from '../systems/automation.js';
+import { CITIES } from '../data/cities.js';
+import { exportSave, importSave, hardReset, save } from '../core/save.js';
 import {
   formatMoney,
   formatRate,
@@ -49,6 +64,7 @@ export function initUI() {
       <h1 class="hud-title">🚚 Food Truck Empire</h1>
       <div class="hud-money" id="money">0 €</div>
       <div class="hud-rate" id="rate">0 €/s</div>
+      <div class="hud-city" id="hud-city"></div>
     </header>
     <main class="main">
       <section class="tab active" id="tab-trucks">
@@ -67,10 +83,31 @@ export function initUI() {
       <section class="tab" id="tab-upgrades">
         <div id="upgrades" class="upgrades"></div>
       </section>
+      <section class="tab" id="tab-world">
+        <div class="prestige-card">
+          <h2>🌍 Globale Expansion</h2>
+          <p class="prestige-desc">
+            Verkaufe dein Imperium und expandiere in eine neue Stadt!
+            Trucks, Geld und Upgrades gehen verloren – deine
+            <b>Marken-Bekanntheit</b> bleibt für immer.
+          </p>
+          <div class="prestige-stats">
+            <div class="prestige-stat"><span>Bekanntheit</span><b data-fame>0 ⭐</b></div>
+            <div class="prestige-stat"><span>Dein Bonus</span><b data-fame-mult>+0%</b></div>
+            <div class="prestige-stat"><span>Bei Expansion</span><b data-fame-gain>+0 ⭐</b></div>
+          </div>
+          <button class="modal-btn" id="prestige-btn" disabled>Expandieren! 🌍</button>
+          <p class="prestige-hint" data-prestige-hint></p>
+        </div>
+        <div id="autobuyer-card"></div>
+        <h3 class="section-title">Deine Welt-Tour</h3>
+        <div class="city-map" id="city-map"></div>
+      </section>
     </main>
     <nav class="tab-bar">
       <button data-tab="trucks" class="active">🚚<span>Trucks</span></button>
       <button data-tab="upgrades">💼<span>Upgrades</span><em class="badge" id="upgrade-badge" hidden></em></button>
+      <button data-tab="world">🌍<span>Welt</span><em class="badge" id="world-badge" hidden>!</em></button>
     </nav>
     <div id="modal-root"></div>
     <div id="fx-layer"></div>
@@ -86,11 +123,25 @@ export function initUI() {
   els.tabBar = document.querySelector('.tab-bar');
   els.modalRoot = document.getElementById('modal-root');
 
+  els.hudCity = document.getElementById('hud-city');
+  els.prestigeBtn = document.getElementById('prestige-btn');
+  els.prestigeHint = document.querySelector('[data-prestige-hint]');
+  els.fame = document.querySelector('[data-fame]');
+  els.fameMult = document.querySelector('[data-fame-mult]');
+  els.fameGain = document.querySelector('[data-fame-gain]');
+  els.cityMap = document.getElementById('city-map');
+  els.autobuyerCard = document.getElementById('autobuyer-card');
+  els.worldBadge = document.getElementById('world-badge');
+
   initJuice();
   bindEvents();
   displayedMoney = state.money;
+  applyCityTheme();
+  buildCityMap();
+  buildAutobuyerCard();
   syncGeneratorList(true);
   syncUpgradeList(true);
+  updateWorldTab();
 }
 
 function bindEvents() {
@@ -123,6 +174,35 @@ function bindEvents() {
         hardReset();
         location.reload();
       }
+    } else if (action === 'prestige') {
+      const city = doPrestige(state);
+      if (!city) return;
+      save();
+      onRunReset();
+      showModal(`
+        <h2>${city.flag} Willkommen in ${city.name}!</h2>
+        <p>${city.bonusDesc}</p>
+        <p>Deine Bekanntheit: <b>${formatNumber(state.prestige.fame)} ⭐</b><br>
+        Permanenter Bonus: <b>+${formatNumber(state.prestige.fame * FAME_MULT_PER_POINT * 100)}%</b></p>
+        <button class="modal-btn" data-close>Neustart mit Rückenwind! 🚀</button>
+      `);
+      playSound('prestige');
+    }
+  });
+
+  // Auto-Buyer-Karte im Welt-Tab.
+  els.autobuyerCard.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    if (action === 'unlock-autobuyer') {
+      if (unlockAutoBuyer(state)) {
+        save();
+        buildAutobuyerCard();
+        updateWorldTab();
+        playSound('buy');
+      }
+    } else if (action === 'toggle-autobuyer') {
+      state.automation.autoBuyer.enabled = !state.automation.autoBuyer.enabled;
+      buildAutobuyerCard();
     }
   });
 
@@ -181,6 +261,22 @@ function bindEvents() {
     }
   });
 
+  // Prestige-Flow: Bestätigung → Reset → Feier-Modal.
+  els.prestigeBtn.addEventListener('click', () => {
+    if (!canPrestige(state)) return;
+    const gain = getFameGain(state);
+    const next = getNextCity(state);
+    showModal(`
+      <h2>🌍 Globale Expansion</h2>
+      <p>Du erhältst <b>+${formatNumber(gain)} ⭐ Bekanntheit</b>
+      (dauerhaft +${formatNumber(gain * FAME_MULT_PER_POINT * 100)}% Einkommen).</p>
+      <p>${next ? `Nächste Stadt: <b>${next.flag} ${next.name}</b><br>${next.bonusDesc}` : 'Du hast bereits die ganze Welt erobert!'}</p>
+      <p>⚠️ Geld, Trucks und Upgrades werden zurückgesetzt.</p>
+      <button class="modal-btn" data-action="prestige">Los geht's! 🚀</button>
+      <button class="modal-btn modal-btn--small modal-btn--ghost" data-close>Noch nicht</button>
+    `);
+  });
+
   // Upgrade-Kauf (Event-Delegation).
   els.upgrades.addEventListener('click', (e) => {
     const card = e.target.closest('[data-upgrade]');
@@ -210,7 +306,93 @@ export function render(dt) {
     els.rate.textContent = formatRate(getTotalIncome(state));
     syncGeneratorList();
     syncUpgradeList();
+    updateWorldTab();
   }
+}
+
+/** Nach einem Prestige-Reset: Anzeige und Listen neu aufbauen. */
+function onRunReset() {
+  displayedMoney = 0;
+  genListKey = '';
+  upgradeListKey = '';
+  applyCityTheme();
+  buildCityMap();
+  buildAutobuyerCard();
+  syncGeneratorList(true);
+  syncUpgradeList(true);
+  updateWorldTab();
+}
+
+/* ---------- Welt-Tab ---------- */
+
+function applyCityTheme() {
+  const city = getCurrentCity(state);
+  document.documentElement.style.setProperty('--c-sky-2', city.accent);
+  els.hudCity.textContent = `📍 ${city.flag} ${city.name}`;
+}
+
+function buildCityMap() {
+  const idx = Math.min(state.prestige.cityIndex, CITIES.length - 1);
+  els.cityMap.innerHTML = CITIES.map((city, i) => {
+    const status = i < idx ? 'done' : i === idx ? 'current' : 'locked';
+    return `
+      <div class="city-stop city-stop--${status}">
+        <span class="city-flag">${status === 'locked' ? '🔒' : city.flag}</span>
+        <span class="city-name">${status === 'locked' && i > idx + 1 ? '???' : city.name}</span>
+        <span class="city-bonus">${status === 'locked' ? (i === idx + 1 ? city.bonusDesc : '') : city.bonusDesc}</span>
+        ${status === 'current' ? '<span class="city-truck">🚚</span>' : ''}
+      </div>`;
+  }).join('<div class="city-link"></div>');
+}
+
+function buildAutobuyerCard() {
+  const ab = state.automation.autoBuyer;
+  if (ab.unlocked) {
+    els.autobuyerCard.innerHTML = `
+      <div class="gen-card">
+        <div class="gen-emoji">🤖</div>
+        <div class="gen-info">
+          <div class="gen-name">Auto-Buyer</div>
+          <div class="gen-income">Kauft jede Sekunde den günstigsten Truck.</div>
+        </div>
+        <button class="buy-btn ${ab.enabled ? '' : 'buy-btn--off'}" data-action="toggle-autobuyer">
+          ${ab.enabled ? 'AN' : 'AUS'}
+        </button>
+      </div>`;
+  } else if (state.prestige.totalResets >= 1) {
+    els.autobuyerCard.innerHTML = `
+      <div class="gen-card">
+        <div class="gen-emoji">🤖</div>
+        <div class="gen-info">
+          <div class="gen-name">Auto-Buyer freischalten</div>
+          <div class="gen-income">Kauft automatisch Trucks – kostet ${AUTO_BUYER_FAME_COST} ⭐ Bekanntheit!</div>
+        </div>
+        <button class="buy-btn" data-action="unlock-autobuyer"
+          ${canUnlockAutoBuyer(state) ? '' : 'disabled'}>
+          ${AUTO_BUYER_FAME_COST} ⭐
+        </button>
+      </div>`;
+  } else {
+    els.autobuyerCard.innerHTML = '';
+  }
+}
+
+function updateWorldTab() {
+  const gain = getFameGain(state);
+  els.fame.textContent = formatNumber(state.prestige.fame) + ' ⭐';
+  els.fameMult.textContent =
+    '+' + formatNumber((getFameMultiplier(state) - 1) * 100) + '%';
+  els.fameGain.textContent = '+' + formatNumber(gain) + ' ⭐';
+  els.prestigeBtn.disabled = gain < 1;
+  els.prestigeHint.textContent =
+    gain < 1
+      ? `Verdiene insgesamt ${formatMoney(1e6)}, um zu expandieren.`
+      : 'Bereit für die nächste Stadt!';
+  els.worldBadge.hidden = gain < 1;
+
+  // Freischalt-Button reaktivieren, sobald genug Bekanntheit da ist.
+  const unlockBtn = els.autobuyerCard.querySelector('[data-action="unlock-autobuyer"]');
+  if (unlockBtn) unlockBtn.disabled = !canUnlockAutoBuyer(state);
 }
 
 /* ---------- Modals ---------- */

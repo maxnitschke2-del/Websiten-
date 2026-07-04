@@ -2,6 +2,7 @@
 
 import { GENERATORS, GENERATOR_MAP } from '../data/generators.js';
 import { UPGRADES } from '../data/upgrades.js';
+import { getFameMultiplier, getConqueredCities } from './prestige.js';
 
 export function getGeneratorMultiplier(state, generatorId) {
   let mult = 1;
@@ -10,14 +11,22 @@ export function getGeneratorMultiplier(state, generatorId) {
       mult *= up.value;
     }
   }
+  for (const city of getConqueredCities(state)) {
+    if (city.bonus?.type === 'genMult' && city.bonus.target === generatorId) {
+      mult *= city.bonus.value;
+    }
+  }
   return mult;
 }
 
-// Prestige (Fame) und Achievements docken in Phase 5/6 hier an.
+// Achievements docken in Phase 6 hier an.
 export function getGlobalMultiplier(state) {
-  let mult = 1;
+  let mult = getFameMultiplier(state);
   for (const up of UPGRADES) {
     if (up.type === 'globalMult' && state.upgrades[up.id]) mult *= up.value;
+  }
+  for (const city of getConqueredCities(state)) {
+    if (city.bonus?.type === 'globalMult') mult *= city.bonus.value;
   }
   return mult;
 }
@@ -47,6 +56,9 @@ export function getClickValue(state) {
     if (!state.upgrades[up.id]) continue;
     if (up.type === 'clickMult') base *= up.value;
     else if (up.type === 'clickIncomePct') incomePct += up.value;
+  }
+  for (const city of getConqueredCities(state)) {
+    if (city.bonus?.type === 'clickMult') base *= city.bonus.value;
   }
   return base * getGlobalMultiplier(state) + getTotalIncome(state) * incomePct;
 }
