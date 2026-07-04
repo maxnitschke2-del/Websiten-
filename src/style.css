@@ -120,6 +120,40 @@ body {
   font-weight: 600;
 }
 
+/* ---------- Kaufmodus-Leiste ---------- */
+
+.buy-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buy-mode-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--c-ink-soft);
+}
+
+.buy-mode button {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--c-ink-soft);
+  background: var(--c-card);
+  border: 2px solid #eadfd2;
+  border-radius: 12px;
+  padding: 6px 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.buy-mode button.active {
+  color: #fff;
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  box-shadow: 0 3px 0 #d6432a;
+}
+
 /* ---------- Generator-Karten ---------- */
 
 .generators {
@@ -162,6 +196,11 @@ body {
 .gen-owned {
   color: var(--c-accent);
   font-variant-numeric: tabular-nums;
+}
+
+.gen-card--teaser {
+  opacity: 0.65;
+  filter: saturate(0.4);
 }
 
 .gen-income {

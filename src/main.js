@@ -15,3 +15,8 @@ onRender((dt) => render(dt));
 
 initUI();
 startLoop();
+
+// Debug-Zugriff für Tests & Balancing – nur im Dev-Build.
+if (import.meta.env.DEV) {
+  window.__game = { state };
+}
