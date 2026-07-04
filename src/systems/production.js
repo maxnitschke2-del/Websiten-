@@ -1,15 +1,25 @@
 // Produktions-Berechnung – reine Funktionen über dem State.
 
 import { GENERATORS, GENERATOR_MAP } from '../data/generators.js';
+import { UPGRADES } from '../data/upgrades.js';
 
-// Multiplikator-Pipeline: Upgrades, Achievements und Prestige
-// docken in späteren Phasen hier an.
 export function getGeneratorMultiplier(state, generatorId) {
-  return 1;
+  let mult = 1;
+  for (const up of UPGRADES) {
+    if (up.type === 'genMult' && up.target === generatorId && state.upgrades[up.id]) {
+      mult *= up.value;
+    }
+  }
+  return mult;
 }
 
+// Prestige (Fame) und Achievements docken in Phase 5/6 hier an.
 export function getGlobalMultiplier(state) {
-  return 1;
+  let mult = 1;
+  for (const up of UPGRADES) {
+    if (up.type === 'globalMult' && state.upgrades[up.id]) mult *= up.value;
+  }
+  return mult;
 }
 
 export function getGeneratorIncome(state, generatorId) {
@@ -29,9 +39,16 @@ export function getTotalIncome(state) {
   return total;
 }
 
-// Klick-Wert: Basis 1 € – Klick-Upgrades (Phase 3) addieren % des Einkommens.
+// Klick-Wert: Basis 1 € × Klick-Upgrades × global, plus %-Anteil des €/s.
 export function getClickValue(state) {
-  return 1 * getGlobalMultiplier(state);
+  let base = 1;
+  let incomePct = 0;
+  for (const up of UPGRADES) {
+    if (!state.upgrades[up.id]) continue;
+    if (up.type === 'clickMult') base *= up.value;
+    else if (up.type === 'clickIncomePct') incomePct += up.value;
+  }
+  return base * getGlobalMultiplier(state) + getTotalIncome(state) * incomePct;
 }
 
 export function earn(state, amount) {

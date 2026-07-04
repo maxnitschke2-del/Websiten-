@@ -14,6 +14,15 @@ export function getMaxBuyCount(generatorId, owned, money) {
   return maxAffordable(gen.baseCost, gen.growthRate, owned, money);
 }
 
+/** Kauft ein Upgrade; gibt true zurück, wenn der Kauf geklappt hat. */
+export function buyUpgrade(state, upgrade) {
+  if (state.upgrades[upgrade.id]) return false;
+  if (state.money < upgrade.cost) return false;
+  state.money -= upgrade.cost;
+  state.upgrades[upgrade.id] = true;
+  return true;
+}
+
 /** Kauft `count` Einheiten; gibt true zurück, wenn der Kauf geklappt hat. */
 export function buyGenerator(state, generatorId, count = 1) {
   if (count <= 0) return false;

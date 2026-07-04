@@ -13,8 +13,9 @@ import {
   getCost,
   getMaxBuyCount,
   buyGenerator,
+  buyUpgrade,
 } from '../systems/costScaling.js';
-import { getVisibleGenerators } from '../systems/unlocks.js';
+import { getVisibleGenerators, getVisibleUpgrades } from '../systems/unlocks.js';
 import { formatMoney, formatRate, formatNumber } from '../utils/formatNumber.js';
 import { initJuice, spawnFloaty, pulse, burstEmojis, playSound } from './juice.js';
 
@@ -26,9 +27,10 @@ let displayedMoney = 0;
 // Kaufmodus: 1 | 10 | 'max' – reiner UI-Zustand, wird nicht gespeichert.
 let buyMode = 1;
 
-// Merkt sich, welche Karten gerade gerendert sind; bei Unlock-Änderung
-// wird die Liste neu aufgebaut statt jede Karte einzeln zu patchen.
-let listKey = '';
+// Merkt sich gerenderte Listen; bei Änderung wird neu aufgebaut
+// statt jede Karte einzeln zu patchen.
+let genListKey = '';
+let upgradeListKey = '';
 
 // Listen-Updates auf ~10 fps drosseln, Geldanzeige läuft jeden Frame.
 const LIST_INTERVAL = 0.1;
@@ -42,18 +44,27 @@ export function initUI() {
       <div class="hud-rate" id="rate">0 €/s</div>
     </header>
     <main class="main">
-      <section class="click-area">
-        <button id="click-truck" class="click-truck" aria-label="Verkaufen!">🚚</button>
-        <p class="click-hint">Tippe den Truck und verkaufe Snacks!</p>
+      <section class="tab active" id="tab-trucks">
+        <div class="click-area">
+          <button id="click-truck" class="click-truck" aria-label="Verkaufen!">🚚</button>
+          <p class="click-hint">Tippe den Truck und verkaufe Snacks!</p>
+        </div>
+        <div class="buy-mode" id="buy-mode">
+          <span class="buy-mode-label">Kaufen:</span>
+          <button data-mode="1" class="active">×1</button>
+          <button data-mode="10">×10</button>
+          <button data-mode="max">Max</button>
+        </div>
+        <div id="generators" class="generators"></div>
       </section>
-      <div class="buy-mode" id="buy-mode">
-        <span class="buy-mode-label">Kaufen:</span>
-        <button data-mode="1" class="active">×1</button>
-        <button data-mode="10">×10</button>
-        <button data-mode="max">Max</button>
-      </div>
-      <section id="generators" class="generators"></section>
+      <section class="tab" id="tab-upgrades">
+        <div id="upgrades" class="upgrades"></div>
+      </section>
     </main>
+    <nav class="tab-bar">
+      <button data-tab="trucks" class="active">🚚<span>Trucks</span></button>
+      <button data-tab="upgrades">💼<span>Upgrades</span><em class="badge" id="upgrade-badge" hidden></em></button>
+    </nav>
     <div id="fx-layer"></div>
   `;
 
@@ -62,14 +73,30 @@ export function initUI() {
   els.truck = document.getElementById('click-truck');
   els.generators = document.getElementById('generators');
   els.buyMode = document.getElementById('buy-mode');
+  els.upgrades = document.getElementById('upgrades');
+  els.upgradeBadge = document.getElementById('upgrade-badge');
+  els.tabBar = document.querySelector('.tab-bar');
 
   initJuice();
   bindEvents();
   displayedMoney = state.money;
   syncGeneratorList(true);
+  syncUpgradeList(true);
 }
 
 function bindEvents() {
+  // Tab-Navigation.
+  els.tabBar.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-tab]');
+    if (!btn) return;
+    for (const b of els.tabBar.querySelectorAll('[data-tab]')) {
+      b.classList.toggle('active', b === btn);
+    }
+    for (const tab of document.querySelectorAll('.tab')) {
+      tab.classList.toggle('active', tab.id === 'tab-' + btn.dataset.tab);
+    }
+  });
+
   // Klick-Truck: sofortiges Feedback bei jedem Tap.
   els.truck.addEventListener('pointerdown', (e) => {
     const value = getClickValue(state);
@@ -91,7 +118,7 @@ function bindEvents() {
     updateGeneratorList();
   });
 
-  // Kauf-Buttons (Event-Delegation).
+  // Truck-Kauf (Event-Delegation).
   els.generators.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-buy]');
     if (!btn || btn.disabled) return;
@@ -112,6 +139,21 @@ function bindEvents() {
       updateGeneratorList();
     }
   });
+
+  // Upgrade-Kauf (Event-Delegation).
+  els.upgrades.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-upgrade]');
+    if (!card || card.classList.contains('locked')) return;
+    const up = getVisibleUpgrades(state).find(
+      (u) => u.id === card.dataset.upgrade
+    );
+    if (up && buyUpgrade(state, up)) {
+      const rect = card.getBoundingClientRect();
+      burstEmojis(rect.left + rect.width / 2, rect.top + rect.height / 2, up.emoji, 10);
+      playSound('buy');
+      syncUpgradeList(true);
+    }
+  });
 }
 
 export function render(dt) {
@@ -126,15 +168,17 @@ export function render(dt) {
     listTimer = 0;
     els.rate.textContent = formatRate(getTotalIncome(state));
     syncGeneratorList();
+    syncUpgradeList();
   }
 }
 
-/** Baut die Liste neu auf, wenn sich Unlocks geändert haben, sonst nur Update. */
+/* ---------- Generatoren ---------- */
+
 function syncGeneratorList(force = false) {
   const visible = getVisibleGenerators(state);
   const key = visible.map((v) => v.gen.id + (v.unlocked ? '+' : '?')).join(',');
-  if (force || key !== listKey) {
-    listKey = key;
+  if (force || key !== genListKey) {
+    genListKey = key;
     buildGeneratorList(visible);
   }
   updateGeneratorList();
@@ -190,4 +234,51 @@ function updateGeneratorList() {
     card.querySelector('[data-buy]').disabled =
       !affordable || state.money < cost;
   }
+}
+
+/* ---------- Upgrades ---------- */
+
+function syncUpgradeList(force = false) {
+  const visible = getVisibleUpgrades(state);
+  const key = visible.map((u) => u.id).join(',');
+  if (force || key !== upgradeListKey) {
+    upgradeListKey = key;
+    buildUpgradeList(visible);
+  }
+  updateUpgradeList(visible);
+}
+
+function buildUpgradeList(visible) {
+  if (visible.length === 0) {
+    els.upgrades.innerHTML = `
+      <p class="empty-hint">Aktuell keine Upgrades verfügbar.<br>
+      Kaufe mehr Trucks, um neue freizuschalten!</p>`;
+    return;
+  }
+  els.upgrades.innerHTML = visible
+    .map(
+      (up) => `
+    <article class="upgrade-card" data-upgrade="${up.id}">
+      <div class="gen-emoji">${up.emoji}</div>
+      <div class="gen-info">
+        <div class="gen-name">${up.name}</div>
+        <div class="gen-income">${up.desc}</div>
+      </div>
+      <span class="upgrade-cost" data-cost>${formatMoney(up.cost)}</span>
+    </article>`
+    )
+    .join('');
+}
+
+function updateUpgradeList(visible) {
+  let affordableCount = 0;
+  for (const card of els.upgrades.querySelectorAll('[data-upgrade]')) {
+    const up = visible.find((u) => u.id === card.dataset.upgrade);
+    if (!up) continue;
+    const locked = state.money < up.cost;
+    card.classList.toggle('locked', locked);
+    if (!locked) affordableCount++;
+  }
+  els.upgradeBadge.hidden = affordableCount === 0;
+  els.upgradeBadge.textContent = affordableCount;
 }
