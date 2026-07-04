@@ -50,6 +50,9 @@ export const UPGRADES = [
   { id: 'clickPct1', name: 'Laufkundschaft', emoji: '🚶', desc: 'Jeder Klick bringt zusätzlich 1% deines €/s.', cost: 10000, type: 'clickIncomePct', value: 0.01, requires: { totalEarned: 5000 } },
   { id: 'clickPct2', name: 'Foodblogger-Hype', emoji: '🤳', desc: 'Jeder Klick bringt zusätzlich 4% deines €/s.', cost: 1e6, type: 'clickIncomePct', value: 0.04, requires: { totalEarned: 500000 } },
 
+  // --- Automatisierung: spürbare, verdiente Freischaltung ---
+  { id: 'autoclicker', name: 'Verkaufs-Roboter', emoji: '🤖', desc: 'Verkauft automatisch 1× pro Sekunde (wie ein Klick).', cost: 50000, type: 'auto', target: 'autoClicker', requires: { totalEarned: 25000 } },
+
   // --- Globale Multiplikatoren (teuer, wirken auf alles) ---
   { id: 'global1', name: 'Social-Media-Kampagne', emoji: '📱', desc: 'Gesamte Produktion ×1,5.', cost: 25000, type: 'globalMult', value: 1.5, requires: { totalEarned: 12000 } },
   { id: 'global2', name: 'Foodtruck-Festival', emoji: '🎪', desc: 'Gesamte Produktion ×2.', cost: 2e6, type: 'globalMult', value: 2, requires: { totalEarned: 1e6 } },

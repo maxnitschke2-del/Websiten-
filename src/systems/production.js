@@ -3,6 +3,7 @@
 import { GENERATORS, GENERATOR_MAP } from '../data/generators.js';
 import { UPGRADES } from '../data/upgrades.js';
 import { getFameMultiplier, getConqueredCities } from './prestige.js';
+import { ACHIEVEMENT_BONUS } from '../data/achievements.js';
 
 export function getGeneratorMultiplier(state, generatorId) {
   let mult = 1;
@@ -19,9 +20,11 @@ export function getGeneratorMultiplier(state, generatorId) {
   return mult;
 }
 
-// Achievements docken in Phase 6 hier an.
 export function getGlobalMultiplier(state) {
-  let mult = getFameMultiplier(state);
+  // +1% pro Erfolg (ACHIEVEMENT_BONUS)
+  let mult =
+    getFameMultiplier(state) *
+    (1 + Object.keys(state.achievements).length * ACHIEVEMENT_BONUS);
   for (const up of UPGRADES) {
     if (up.type === 'globalMult' && state.upgrades[up.id]) mult *= up.value;
   }

@@ -15,7 +15,13 @@ import {
   buyGenerator,
   buyUpgrade,
 } from '../systems/costScaling.js';
-import { getVisibleGenerators, getVisibleUpgrades } from '../systems/unlocks.js';
+import {
+  getVisibleGenerators,
+  getVisibleUpgrades,
+  getNextGoal,
+  getAchievementProgress,
+} from '../systems/unlocks.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_BONUS } from '../data/achievements.js';
 import {
   getFameGain,
   getFameMultiplier,
@@ -38,7 +44,15 @@ import {
   formatNumber,
   formatDuration,
 } from '../utils/formatNumber.js';
-import { initJuice, spawnFloaty, pulse, burstEmojis, playSound } from './juice.js';
+import {
+  initJuice,
+  spawnFloaty,
+  pulse,
+  burstEmojis,
+  showToast,
+  confetti,
+  playSound,
+} from './juice.js';
 
 const els = {};
 
@@ -65,6 +79,11 @@ export function initUI() {
       <div class="hud-money" id="money">0 €</div>
       <div class="hud-rate" id="rate">0 €/s</div>
       <div class="hud-city" id="hud-city"></div>
+      <div class="goal-banner" id="goal-banner" hidden>
+        <span class="goal-icon">🎯</span>
+        <span class="goal-text" id="goal-text"></span>
+        <span class="goal-bar"><span class="goal-bar-fill" id="goal-bar-fill"></span></span>
+      </div>
     </header>
     <main class="main">
       <section class="tab active" id="tab-trucks">
@@ -103,11 +122,16 @@ export function initUI() {
         <h3 class="section-title">Deine Welt-Tour</h3>
         <div class="city-map" id="city-map"></div>
       </section>
+      <section class="tab" id="tab-awards">
+        <div class="awards-summary" id="awards-summary"></div>
+        <div class="awards-grid" id="awards"></div>
+      </section>
     </main>
     <nav class="tab-bar">
       <button data-tab="trucks" class="active">🚚<span>Trucks</span></button>
       <button data-tab="upgrades">💼<span>Upgrades</span><em class="badge" id="upgrade-badge" hidden></em></button>
       <button data-tab="world">🌍<span>Welt</span><em class="badge" id="world-badge" hidden>!</em></button>
+      <button data-tab="awards">🏆<span>Erfolge</span></button>
     </nav>
     <div id="modal-root"></div>
     <div id="fx-layer"></div>
@@ -132,6 +156,11 @@ export function initUI() {
   els.cityMap = document.getElementById('city-map');
   els.autobuyerCard = document.getElementById('autobuyer-card');
   els.worldBadge = document.getElementById('world-badge');
+  els.goalBanner = document.getElementById('goal-banner');
+  els.goalText = document.getElementById('goal-text');
+  els.goalBarFill = document.getElementById('goal-bar-fill');
+  els.awards = document.getElementById('awards');
+  els.awardsSummary = document.getElementById('awards-summary');
 
   initJuice();
   bindEvents();
@@ -307,7 +336,73 @@ export function render(dt) {
     syncGeneratorList();
     syncUpgradeList();
     updateWorldTab();
+    updateGoalBanner();
+    syncAwards();
   }
+}
+
+/** Feier + Toast, wenn Erfolge freigeschaltet wurden (aus main.js). */
+export function celebrateAchievements(newly) {
+  for (const ach of newly) {
+    showToast(`${ach.emoji} <b>${ach.name}</b><br><small>${ach.desc} · +1% Einkommen!</small>`);
+  }
+  confetti();
+  playSound('achievement');
+  syncAwards(true);
+}
+
+/** Feedback des Auto-Klickers: kleiner Floaty am Truck. */
+export function autoClickFeedback(value) {
+  if (!document.getElementById('tab-trucks').classList.contains('active')) return;
+  const rect = els.truck.getBoundingClientRect();
+  spawnFloaty(
+    rect.left + rect.width / 2 + (Math.random() - 0.5) * 60,
+    rect.top + 20,
+    '+' + formatMoney(value)
+  );
+}
+
+/* ---------- Ziel-Banner & Erfolge ---------- */
+
+let goalKey = '';
+let awardsKey = '';
+
+function updateGoalBanner() {
+  const goal = getNextGoal(state);
+  if (!goal) {
+    els.goalBanner.hidden = true;
+    return;
+  }
+  els.goalBanner.hidden = false;
+  const key = goal.ach.id;
+  if (key !== goalKey) {
+    goalKey = key;
+    els.goalText.textContent = `${goal.ach.emoji} ${goal.ach.name}: ${goal.ach.desc}`;
+  }
+  els.goalBarFill.style.width = Math.floor(goal.progress * 100) + '%';
+}
+
+function syncAwards(force = false) {
+  const count = Object.keys(state.achievements).length;
+  const key = String(count);
+  if (!force && key === awardsKey) return;
+  awardsKey = key;
+
+  els.awardsSummary.innerHTML = `
+    <b>${count} / ${ACHIEVEMENTS.length}</b> Erfolge freigeschaltet ·
+    Bonus: <b>+${formatNumber(count * ACHIEVEMENT_BONUS * 100)}%</b> Einkommen`;
+
+  els.awards.innerHTML = ACHIEVEMENTS.map((ach) => {
+    const done = !!state.achievements[ach.id];
+    const progress = done ? 1 : Math.min(getAchievementProgress(state, ach), 0.999);
+    return `
+      <div class="award ${done ? 'award--done' : ''}">
+        <span class="award-emoji">${done ? ach.emoji : '🔒'}</span>
+        <span class="award-name">${ach.name}</span>
+        <span class="award-desc">${ach.desc}</span>
+        ${done ? '' : `<span class="goal-bar"><span class="goal-bar-fill" style="width:${Math.floor(progress * 100)}%"></span></span>`}
+      </div>`;
+  }).join('');
 }
 
 /** Nach einem Prestige-Reset: Anzeige und Listen neu aufbauen. */

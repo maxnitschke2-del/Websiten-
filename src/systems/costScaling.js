@@ -20,6 +20,8 @@ export function buyUpgrade(state, upgrade) {
   if (state.money < upgrade.cost) return false;
   state.money -= upgrade.cost;
   state.upgrades[upgrade.id] = true;
+  // Automatisierungs-Upgrades schalten dauerhaft frei (überlebt Prestige).
+  if (upgrade.type === 'auto') state.automation[upgrade.target] = true;
   return true;
 }
 

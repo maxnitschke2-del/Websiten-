@@ -3,6 +3,19 @@
 import { GENERATORS } from '../data/generators.js';
 import { getCost, buyGenerator } from './costScaling.js';
 import { isGeneratorUnlocked } from './unlocks.js';
+import { getClickValue, earn } from './production.js';
+
+/**
+ * Auto-Klicker (Verkaufs-Roboter): 1 Klick pro Aufruf (im Sekundentakt).
+ * Gibt den Klick-Wert zurück (für UI-Feedback) oder 0.
+ */
+export function autoClickTick(state) {
+  if (!state.automation.autoClicker) return 0;
+  const value = getClickValue(state);
+  earn(state, value);
+  state.stats.clicks++;
+  return value;
+}
 
 // Der Auto-Buyer kostet Bekanntheit – eine echte Entscheidung,
 // weil Bekanntheit sonst Einkommens-Multiplikator wäre.

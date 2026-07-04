@@ -63,6 +63,49 @@ export function burstEmojis(x, y, emoji, count = 8) {
   }
 }
 
+/** Toast oben im Bild, z.B. für Achievements. */
+export function showToast(html) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = html;
+  fxLayer.appendChild(el);
+  gsap.fromTo(
+    el,
+    { y: -80, opacity: 0 },
+    { y: 0, opacity: 1, duration: 0.45, ease: 'back.out(1.6)' }
+  );
+  gsap.to(el, {
+    y: -80,
+    opacity: 0,
+    delay: 2.6,
+    duration: 0.35,
+    ease: 'power1.in',
+    onComplete: () => el.remove(),
+  });
+}
+
+/** Konfetti-Regen für große Momente (Achievement, Prestige). */
+export function confetti() {
+  const emojis = ['🎉', '✨', '🎊', '⭐'];
+  for (let i = 0; i < 16; i++) {
+    const el = document.createElement('span');
+    el.className = 'particle';
+    el.textContent = emojis[i % emojis.length];
+    el.style.left = Math.random() * window.innerWidth + 'px';
+    el.style.top = '-30px';
+    fxLayer.appendChild(el);
+    gsap.to(el, {
+      y: window.innerHeight * (0.4 + Math.random() * 0.5),
+      x: (Math.random() - 0.5) * 120,
+      rotation: (Math.random() - 0.5) * 360,
+      opacity: 0,
+      duration: 1.4 + Math.random() * 0.8,
+      ease: 'power1.in',
+      onComplete: () => el.remove(),
+    });
+  }
+}
+
 // Sound-Hook: bewusst no-op, damit Aufrufstellen schon stehen.
 export function playSound(id) {
   // TODO: echte Sounds einhängen (id: 'click' | 'buy' | 'achievement' | ...)

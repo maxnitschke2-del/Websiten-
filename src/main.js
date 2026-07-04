@@ -4,27 +4,44 @@ import './style.css';
 import { state } from './core/gameState.js';
 import { startLoop, onTick, onRender } from './core/gameLoop.js';
 import { getTotalIncome, earn } from './systems/production.js';
-import { autoBuyTick } from './systems/automation.js';
+import { autoBuyTick, autoClickTick } from './systems/automation.js';
+import { checkAchievements } from './systems/unlocks.js';
 import {
   load,
   save,
   initAutosave,
   applyOfflineProgress,
 } from './core/save.js';
-import { initUI, render, showWelcomeBack } from './ui/render.js';
+import {
+  initUI,
+  render,
+  showWelcomeBack,
+  celebrateAchievements,
+  autoClickFeedback,
+} from './ui/render.js';
 
 const offline = load();
 
-let autoBuyTimer = 0;
+let autoTimer = 0;
+let achievementTimer = 0;
 
 onTick((dt) => {
   earn(state, getTotalIncome(state) * dt);
   state.stats.playtimeMs += dt * 1000;
 
-  autoBuyTimer += dt;
-  if (autoBuyTimer >= 1) {
-    autoBuyTimer = 0;
+  autoTimer += dt;
+  if (autoTimer >= 1) {
+    autoTimer = 0;
     autoBuyTick(state);
+    const clicked = autoClickTick(state);
+    if (clicked > 0) autoClickFeedback(clicked);
+  }
+
+  achievementTimer += dt;
+  if (achievementTimer >= 0.5) {
+    achievementTimer = 0;
+    const newly = checkAchievements(state);
+    if (newly.length > 0) celebrateAchievements(newly);
   }
 });
 
