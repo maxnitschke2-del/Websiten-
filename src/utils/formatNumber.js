@@ -29,3 +29,13 @@ export function formatMoney(n) {
 export function formatRate(n) {
   return formatNumber(n) + ' €/s';
 }
+
+export function formatDuration(seconds) {
+  const s = Math.floor(seconds);
+  if (s < 60) return s + ' s';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60);
+  const restM = m % 60;
+  return restM > 0 ? `${h} h ${restM} min` : `${h} h`;
+}

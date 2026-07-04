@@ -16,7 +16,13 @@ import {
   buyUpgrade,
 } from '../systems/costScaling.js';
 import { getVisibleGenerators, getVisibleUpgrades } from '../systems/unlocks.js';
-import { formatMoney, formatRate, formatNumber } from '../utils/formatNumber.js';
+import { exportSave, importSave, hardReset } from '../core/save.js';
+import {
+  formatMoney,
+  formatRate,
+  formatNumber,
+  formatDuration,
+} from '../utils/formatNumber.js';
 import { initJuice, spawnFloaty, pulse, burstEmojis, playSound } from './juice.js';
 
 const els = {};
@@ -39,6 +45,7 @@ let listTimer = 0;
 export function initUI() {
   document.getElementById('app').innerHTML = `
     <header class="hud">
+      <button class="settings-btn" id="settings-btn" aria-label="Optionen">⚙️</button>
       <h1 class="hud-title">🚚 Food Truck Empire</h1>
       <div class="hud-money" id="money">0 €</div>
       <div class="hud-rate" id="rate">0 €/s</div>
@@ -65,6 +72,7 @@ export function initUI() {
       <button data-tab="trucks" class="active">🚚<span>Trucks</span></button>
       <button data-tab="upgrades">💼<span>Upgrades</span><em class="badge" id="upgrade-badge" hidden></em></button>
     </nav>
+    <div id="modal-root"></div>
     <div id="fx-layer"></div>
   `;
 
@@ -76,6 +84,7 @@ export function initUI() {
   els.upgrades = document.getElementById('upgrades');
   els.upgradeBadge = document.getElementById('upgrade-badge');
   els.tabBar = document.querySelector('.tab-bar');
+  els.modalRoot = document.getElementById('modal-root');
 
   initJuice();
   bindEvents();
@@ -85,6 +94,38 @@ export function initUI() {
 }
 
 function bindEvents() {
+  // Optionen-Modal.
+  document
+    .getElementById('settings-btn')
+    .addEventListener('click', showSettings);
+
+  // Modal-Aktionen (Event-Delegation).
+  els.modalRoot.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]') || e.target.classList.contains('modal-overlay')) {
+      closeModal();
+      return;
+    }
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    if (action === 'copy') {
+      const area = document.getElementById('export-area');
+      area.select();
+      navigator.clipboard?.writeText(area.value);
+      e.target.textContent = 'Kopiert ✓';
+    } else if (action === 'import') {
+      const code = document.getElementById('import-area').value;
+      if (importSave(code)) {
+        location.reload();
+      } else {
+        document.getElementById('import-error').hidden = false;
+      }
+    } else if (action === 'reset') {
+      if (confirm('Wirklich ALLES löschen? Das kann nicht rückgängig gemacht werden!')) {
+        hardReset();
+        location.reload();
+      }
+    }
+  });
+
   // Tab-Navigation.
   els.tabBar.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-tab]');
@@ -170,6 +211,45 @@ export function render(dt) {
     syncGeneratorList();
     syncUpgradeList();
   }
+}
+
+/* ---------- Modals ---------- */
+
+function showModal(html) {
+  els.modalRoot.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-card">${html}</div>
+    </div>`;
+}
+
+function closeModal() {
+  els.modalRoot.innerHTML = '';
+}
+
+export function showWelcomeBack({ seconds, earned }) {
+  showModal(`
+    <h2>Willkommen zurück! 👋</h2>
+    <p>Du warst ${formatDuration(seconds)} unterwegs.<br>
+    Deine Trucks haben fleißig weiterverkauft:</p>
+    <p class="modal-money">+${formatMoney(earned)}</p>
+    <button class="modal-btn" data-close>Kassieren! 💰</button>
+  `);
+}
+
+function showSettings() {
+  showModal(`
+    <h2>⚙️ Optionen</h2>
+    <label class="modal-label" for="export-area">Save exportieren</label>
+    <textarea id="export-area" readonly>${exportSave()}</textarea>
+    <button class="modal-btn modal-btn--small" data-action="copy">Kopieren</button>
+    <label class="modal-label" for="import-area">Save importieren</label>
+    <textarea id="import-area" placeholder="Save-Code hier einfügen …"></textarea>
+    <p id="import-error" class="modal-error" hidden>Ungültiger Save-Code!</p>
+    <button class="modal-btn modal-btn--small" data-action="import">Importieren</button>
+    <hr class="modal-sep">
+    <button class="modal-btn modal-btn--small modal-btn--danger" data-action="reset">Spielstand löschen</button>
+    <button class="modal-btn" data-close>Schließen</button>
+  `);
 }
 
 /* ---------- Generatoren ---------- */

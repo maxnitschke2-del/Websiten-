@@ -1,10 +1,18 @@
-// Bootstrap: State laden (ab Phase 4) → UI initialisieren → Loop starten.
+// Bootstrap: Save laden → UI initialisieren → Loop starten.
 
 import './style.css';
 import { state } from './core/gameState.js';
 import { startLoop, onTick, onRender } from './core/gameLoop.js';
 import { getTotalIncome, earn } from './systems/production.js';
-import { initUI, render } from './ui/render.js';
+import {
+  load,
+  save,
+  initAutosave,
+  applyOfflineProgress,
+} from './core/save.js';
+import { initUI, render, showWelcomeBack } from './ui/render.js';
+
+const offline = load();
 
 onTick((dt) => {
   earn(state, getTotalIncome(state) * dt);
@@ -15,6 +23,18 @@ onRender((dt) => render(dt));
 
 initUI();
 startLoop();
+initAutosave();
+
+if (offline) showWelcomeBack(offline);
+
+// Tab war im Hintergrund (rAF pausiert): Zeit als Offline-Progress verrechnen.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const result = applyOfflineProgress();
+    save();
+    if (result) showWelcomeBack(result);
+  }
+});
 
 // Debug-Zugriff für Tests & Balancing – nur im Dev-Build.
 if (import.meta.env.DEV) {
