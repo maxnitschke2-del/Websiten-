@@ -1,19 +1,22 @@
-import { STATIONS } from '../data/stations.js';
+import { getStationsFor } from '../data/stations.js';
 
 const SAVE_KEY = 'foodtruck-idle-v1';
 
 export const state = {
   money: 0,
+  worldIndex: 0, // aktive Welt
+  unlockedWorlds: 1, // Anzahl freigeschalteter Welten (sequenziell)
+  worldSaves: {}, // worldIndex -> { money, locationIndex, stations } (inaktive Welten)
   locationIndex: 0,
-  stations: {}, // stationId -> { level }
+  stations: {}, // stationId -> { level } (aktive Welt)
   tipsCollected: 0,
   achievements: [], // freigeschaltete Achievement-IDs
   muted: false,
   lastSeen: Date.now(),
 };
 
-function ensureStations() {
-  for (const def of STATIONS) {
+export function ensureStations() {
+  for (const def of getStationsFor(state.worldIndex)) {
     if (!state.stations[def.id]) {
       state.stations[def.id] = { level: def.unlockCost > 0 ? 0 : 1 };
     }

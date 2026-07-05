@@ -14,12 +14,13 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function randomCustomerVariant() {
+// opts.shirts: Welt-eigene Kleidungs-Palette (data/worlds.js, customers)
+export function randomCustomerVariant(opts = {}) {
   return {
     skin: pick(SKIN_TONES),
     hairColor: pick(HAIR_COLORS),
     hairStyle: pick(HAIR_STYLES),
-    shirt: pick(SHIRT_COLORS),
+    shirt: pick(opts.shirts || SHIRT_COLORS),
     pants: pick(PANTS_COLORS),
     kid: Math.random() < 0.15,
   };

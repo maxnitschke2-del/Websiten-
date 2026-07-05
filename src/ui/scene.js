@@ -3,7 +3,7 @@
 // Personal Low-Poly-3D-Figuren; nur noch Sprechblasen, Trinkgeld-Bubbles
 // und Schwebe-Texte sind DOM-Elemente im Overlay (antippbar/knackscharf),
 // positioniert über die Kamera-Projektion.
-import { STATIONS } from '../data/stations.js';
+import { getStations } from '../data/stations.js';
 import { getLocation } from '../data/locations.js';
 import { getWorld } from '../data/worlds.js';
 import { state } from '../core/state.js';
@@ -17,8 +17,10 @@ import {
   randomCustomerVariant,
 } from '../render3d/models/person.js';
 
-// Truck-Positionen auf der Plaza (x in Weltkoordinaten)
-const TRUCK_XS = [-6.0, 0, 6.0];
+// Truck-Positionen auf der Plaza (x in Weltkoordinaten); seit Phase 3
+// hat jede Welt 4 Trucks, deshalb etwas kleiner skaliert.
+const TRUCK_XS = [-6.9, -2.3, 2.3, 6.9];
+const TRUCK_SCALE = 0.82;
 // Kunden laufen auf dieser z-Spur (vor den Trucks) ein und aus
 const ENTRY_X = 13;
 
@@ -52,20 +54,21 @@ export function buildScene(root) {
   root.appendChild(overlay);
 
   const loc = getLocation(state.locationIndex).theme;
-  const world = getWorld(0);
+  const world = getWorld(state.worldIndex);
   r3d.setSky({ sky: loc.skyTop, ground: loc.ground });
 
   const env = buildEnvironment({
     loc,
     env: world.env,
-    seed: state.locationIndex,
+    seed: state.worldIndex * 101 + state.locationIndex,
   });
   r3d.add(env.group);
   r3d.onFrame(env.update);
 
-  STATIONS.forEach((def, i) => {
-    const truck = createFoodtruck(world.trucks[def.id], def);
+  getStations().forEach((def, i) => {
+    const truck = createFoodtruck(def.truck, def);
     truck.group.position.x = TRUCK_XS[i];
+    truck.group.scale.setScalar(TRUCK_SCALE);
     const locked = state.stations[def.id].level === 0;
     truck.setLocked(locked);
     if (!locked) addWorker(truck, def);
@@ -84,7 +87,7 @@ export function buildScene(root) {
 // ---------- Personal ----------
 
 function addWorker(truck, def) {
-  const worker = createWorker(getWorld(0).trucks[def.id]);
+  const worker = createWorker(def.truck);
   // Im Verkaufsfenster: Oberkörper + Kopf ragen vor der dunklen
   // Fensterplatte (z=0.74) auf, Beine stecken unsichtbar im Korpus.
   worker.group.position.set(0.35, 0.5, 0.72);
@@ -168,7 +171,7 @@ export function unlockStandVisual(stationId) {
   const truck = trucks.get(stationId);
   if (!truck) return;
   truck.setLocked(false);
-  if (!truck.worker) addWorker(truck, STATIONS.find((s) => s.id === stationId));
+  if (!truck.worker) addWorker(truck, getStations().find((s) => s.id === stationId));
   updateLockBadges();
   animateTruck(truck);
   gsap.from(truck.group.scale, {
@@ -192,7 +195,9 @@ function turnTo(group, target, duration = 0.2) {
 }
 
 export function createCustomer() {
-  const person = createPerson(randomCustomerVariant());
+  const person = createPerson(
+    randomCustomerVariant(getWorld(state.worldIndex).customers)
+  );
   person.group.position.set(ENTRY_X, 0, rand(2.3, 3.2));
   r3d.add(person.group);
 

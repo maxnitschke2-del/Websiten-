@@ -101,8 +101,9 @@ export function buildEnvironment({ loc, env, seed }) {
     group.add(line);
   }
 
-  // Häuserzeile im Hintergrund, Farbton leicht variiert
-  const base = new THREE.Color(loc.building);
+  // Häuserzeile im Hintergrund, Farbton leicht variiert; Welten können
+  // die Gebäude-Basisfarbe des Standorts übersteuern (env.building)
+  const base = new THREE.Color(env.building || loc.building);
   let x = -16;
   while (x < 16) {
     const w = 2.6 + rng() * 2.2;

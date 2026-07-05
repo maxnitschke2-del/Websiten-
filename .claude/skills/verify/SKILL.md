@@ -53,6 +53,14 @@ das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
   legen (Key `foodtruck-idle-v1`, z. B. `{"money":800}`), dann Unlock-Button
   klicken → ein `.lock-badge` im Overlay verschwindet (Anzahl sinkt),
   Einkommen/s steigt. Gesperrte Trucks sind im 3D-Canvas grau.
+- Welten (Phase 3): `#worlds-btn` öffnet das Auswahl-Modal (`.world-card`,
+  4 Stück: freigeschaltete Welten, nächste mit `.world-unlock-btn`, Rest
+  `???`). Freischalt-Test: Spielstand `{"money":30000000}` setzen →
+  Button aktiv, Klick wechselt in Welt 2 (Stations-Karten zeigen
+  Sushi/Ramen/Onigiri/Matcha, Szene mit Sakura-Bäumen). `.world-switch-btn`
+  wechselt zurück; Geld ist pro Welt getrennt (`state.worldSaves`).
+  Alte Spielstände ohne worldIndex migrieren automatisch (Welt 1,
+  4. Station "Eis" wird gesperrt ergänzt).
 - Umzug testen: Spielstand mit allen Stationen am Cap setzen, dann
   `#move-btn` mit `{ force: true }` klicken (der Button pulsiert per
   CSS-Animation, Playwright hält ihn sonst für instabil). Danach: genau

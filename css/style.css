@@ -118,6 +118,35 @@ body {
   animation: move-pulse 1.4s ease-in-out infinite;
 }
 
+.worlds-btn {
+  position: relative;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text);
+  background: transparent;
+}
+
+/* Nächste Welt ist bezahlbar: goldener Hinweis-Punkt + Puls */
+.worlds-btn.affordable {
+  border-color: var(--accent);
+  animation: move-pulse 1.4s ease-in-out infinite;
+}
+
+.worlds-btn.affordable::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 @keyframes move-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -395,4 +424,98 @@ body {
   cursor: pointer;
   color: #2b1c00;
   background: linear-gradient(var(--accent), var(--accent-dark));
+}
+
+/* ---------- Welt-Auswahl ---------- */
+
+.world-modal {
+  max-width: 420px;
+  text-align: left;
+  position: relative;
+}
+
+.world-modal h2 {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.world-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.world-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.world-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.world-card.active {
+  border-color: var(--good);
+  background: rgba(76, 217, 100, 0.08);
+}
+
+.world-card.hidden-world { opacity: 0.55; }
+
+.world-emoji { font-size: 1.9rem; }
+
+.world-info { flex: 1; min-width: 0; }
+
+.world-name { font-weight: 700; }
+
+.world-meta {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.world-active-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--good);
+  border: 1px solid rgba(76, 217, 100, 0.5);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.world-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.world-switch-btn {
+  color: #06270f;
+  background: linear-gradient(#5ee07a, #2fae4d);
+}
+
+.world-unlock-btn {
+  color: #2b1c00;
+  background: linear-gradient(var(--accent), var(--accent-dark));
+}
+
+.world-unlock-btn:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+  opacity: 0.6;
 }

@@ -1,6 +1,7 @@
 import { state } from '../core/state.js';
-import { STATIONS } from '../data/stations.js';
+import { getStations } from '../data/stations.js';
 import { totalIncomePerSecond } from '../systems/production.js';
+import { canUnlockNextWorld } from '../systems/worlds.js';
 import { costFor, canUpgrade, tryUpgrade, isAtCap } from '../systems/upgrades.js';
 import {
   currentLocation,
@@ -26,6 +27,7 @@ let locNameEl;
 let locProgressEl;
 let locBonusEl;
 let moveBtn;
+let worldsBtn;
 const cards = new Map();
 
 export function initHud() {
@@ -44,14 +46,26 @@ export function initHud() {
     updateHud();
   });
 
+  worldsBtn = document.getElementById('worlds-btn');
+
   const muteBtn = document.getElementById('mute-btn');
   muteBtn.textContent = state.muted ? '🔇' : '🔊';
   muteBtn.addEventListener('click', () => {
     muteBtn.textContent = toggleMute() ? '🔇' : '🔊';
   });
-  const panel = document.getElementById('panel');
 
-  for (const def of STATIONS) {
+  rebuildStationCards();
+  renderAchievements();
+  updateHud();
+}
+
+// Karten für die Stationen der aktiven Welt (nach Welt-Wechsel neu bauen).
+export function rebuildStationCards() {
+  const panel = document.getElementById('panel');
+  panel.innerHTML = '';
+  cards.clear();
+
+  for (const def of getStations()) {
     const card = document.createElement('div');
     card.className = 'station-card';
     card.innerHTML = `
@@ -73,8 +87,6 @@ export function initHud() {
     panel.appendChild(card);
     cards.set(def.id, { def, meta: card.querySelector('.station-meta'), btn });
   }
-  renderAchievements();
-  updateHud();
 }
 
 // Erfolgs-Grid: freigeschaltete farbig, gesperrte ausgegraut mit Bedingung.
@@ -120,6 +132,7 @@ export function updateHud() {
   moneyEl.textContent = `$${formatMoney(state.money)}`;
   incomeEl.textContent = `$${formatRate(totalIncomePerSecond())}`;
   updateLocationBar();
+  worldsBtn.classList.toggle('affordable', canUnlockNextWorld());
   for (const { def, meta, btn } of cards.values()) {
     const level = state.stations[def.id].level;
     if (level === 0) {

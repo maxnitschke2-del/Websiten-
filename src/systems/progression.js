@@ -1,7 +1,7 @@
 // Standort-Progression: Level-Cap prüfen, Umzug in die nächste Stadt,
 // permanenter Basis-Bonus pro gemeisterter Stadt.
 import { state, resetForNewLocation, saveState } from '../core/state.js';
-import { STATIONS, incomePerSecond } from '../data/stations.js';
+import { getStations, incomePerSecond } from '../data/stations.js';
 import { LOCATIONS, getLocation } from '../data/locations.js';
 
 export const BONUS_PER_CITY = 0.5; // +50% Basis-Einkommen je gemeisterter Stadt
@@ -33,7 +33,7 @@ export function stationIncome(def, level) {
 
 export function stationsAtCap() {
   const cap = levelCap();
-  return STATIONS.filter((def) => state.stations[def.id].level >= cap).length;
+  return getStations().filter((def) => state.stations[def.id].level >= cap).length;
 }
 
 export function isFinalLocation() {
@@ -41,7 +41,7 @@ export function isFinalLocation() {
 }
 
 export function canMove() {
-  return stationsAtCap() === STATIONS.length && !isFinalLocation();
+  return stationsAtCap() === getStations().length && !isFinalLocation();
 }
 
 export function moveToNextLocation() {

@@ -8,7 +8,7 @@ import {
   getStandStop,
   getEntryX,
 } from '../ui/scene.js';
-import { STATIONS } from '../data/stations.js';
+import { getStations } from '../data/stations.js';
 import { state } from '../core/state.js';
 import { currentLocation } from './progression.js';
 import { playSound } from './sound.js';
@@ -34,7 +34,7 @@ function schedule(delay = rand(SPAWN_DELAY_MIN, SPAWN_DELAY_MAX)) {
 }
 
 function unlockedStations() {
-  return STATIONS.filter((def) => state.stations[def.id].level > 0);
+  return getStations().filter((def) => state.stations[def.id].level > 0);
 }
 
 // Kapazität wächst mit dem Standort (maxCustomers), begrenzt auf

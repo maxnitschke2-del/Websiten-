@@ -8,6 +8,7 @@ import { checkAchievements, onAchievementUnlocked } from './systems/achievements
 import { initSound, playSound } from './systems/sound.js';
 import { buildScene, startWorkerAnimations } from './ui/scene.js';
 import { initHud, updateHud, renderAchievements } from './ui/hud.js';
+import { initWorldSelect } from './ui/worldSelect.js';
 import { showOfflineModal } from './ui/modal.js';
 import { showToast } from './ui/toast.js';
 
@@ -22,6 +23,7 @@ buildScene(document.getElementById('scene'));
 startWorkerAnimations();
 initSound();
 initHud();
+initWorldSelect();
 initTips();
 startCustomers();
 if (offline) showOfflineModal(offline);
