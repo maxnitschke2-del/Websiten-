@@ -140,62 +140,33 @@ body {
   background: linear-gradient(var(--sky-top), var(--sky-bottom) 70%);
 }
 
-.scene-sun {
+/* Three.js-Canvas füllt die Szene, DOM-Overlay liegt darüber
+   (Kunden, Trinkgeld-Bubbles, Lock-Badges — bis Phase 2). */
+#scene canvas {
   position: absolute;
-  top: 7%;
-  right: 8%;
-  width: 9%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #ffe17a;
-  box-shadow: 0 0 30px 10px rgba(255, 225, 122, 0.55);
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
-.scene-building {
+.scene-overlay {
   position: absolute;
-  bottom: 22%;
-  background: var(--building, #9db4c4);
-  border-radius: 4px 4px 0 0;
-  opacity: 0.55;
-}
-
-.scene-ground {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 22%;
-  background: linear-gradient(var(--ground), var(--ground-dark));
-  border-top: 3px solid #8f887c;
-}
-
-.stand {
-  position: absolute;
-  bottom: 16%;
-  width: clamp(120px, 26%, 220px);
+  inset: 0;
   z-index: 2;
+  pointer-events: none;
 }
 
-.stand svg { display: block; width: 100%; height: auto; }
+.scene-overlay .tip-bubble { pointer-events: auto; }
 
-.stand.locked svg {
-  filter: grayscale(1) brightness(0.9);
-  opacity: 0.5;
-}
-
-.stand.locked .worker-g { display: none; }
-
-.stand-lock {
-  display: none;
+.lock-badge {
   position: absolute;
-  left: 50%;
-  top: 42%;
   transform: translate(-50%, -50%);
+  z-index: 3;
   font-size: clamp(20px, 4vw, 34px);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
 }
-
-.stand.locked .stand-lock { display: block; }
 
 .customer {
   position: absolute;

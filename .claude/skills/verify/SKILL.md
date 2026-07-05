@@ -1,6 +1,9 @@
 # Verify: Foodtruck Empire (statische Website)
 
-Rein statische Site (HTML + ES-Module + vendored GSAP), kein Build-Schritt.
+Rein statische Site (HTML + ES-Module + vendored GSAP + vendored Three.js
+über Importmap), kein Build-Schritt. Die Szene ist ein Three.js-Canvas
+(`#scene canvas`); Kunden/Trinkgeld-Bubbles sind DOM-Sprites im Overlay
+`.scene-overlay` darüber.
 
 ## Starten
 
@@ -18,8 +21,13 @@ npm install playwright   # in einem Scratch-Ordner, Browser NICHT neu laden
 const { chromium } = require('playwright');
 const browser = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  // Headless-WebGL für die Three.js-Szene:
+  args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
 });
 ```
+
+Headless-WebGL loggt beim Screenshotten `GPU stall due to ReadPixels`
+Warnings — harmlos, kein App-Fehler.
 
 Achtung: `/opt/pw-browsers/chromium` ist ein Verzeichnis-Alias ohne Binary —
 das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
@@ -40,4 +48,9 @@ das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
 - Mobile-Viewport 375 px gegenprüfen (Layout ist flex/percentage-basiert).
 - Stationen freischalten: Spielstand vorab per `addInitScript` in localStorage
   legen (Key `foodtruck-idle-v1`, z. B. `{"money":800}`), dann Unlock-Button
-  klicken → `.stand[data-station=…]` verliert `locked`, Einkommen/s steigt.
+  klicken → ein `.lock-badge` im Overlay verschwindet (Anzahl sinkt),
+  Einkommen/s steigt. Gesperrte Trucks sind im 3D-Canvas grau.
+- Umzug testen: Spielstand mit allen Stationen am Cap setzen, dann
+  `#move-btn` mit `{ force: true }` klicken (der Button pulsiert per
+  CSS-Animation, Playwright hält ihn sonst für instabil). Danach: genau
+  1 Canvas in `#scene`, neues Standort-Theme, keine pageerrors.
