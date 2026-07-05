@@ -21,6 +21,7 @@ import {
   createWorker,
   randomCustomerVariant,
 } from '../render3d/models/person.js';
+import { createSteam } from '../render3d/models/steam.js';
 
 // Truck-Positionen auf der Plaza (x in Weltkoordinaten); jede Welt hat
 // 4 Trucks, deshalb etwas kleiner skaliert.
@@ -132,9 +133,19 @@ export function buildScene(root) {
   r3d.onResize(updateLockBadges);
   r3d.onFrame((dt) => {
     content.update(dt);
-    if (pendingContent) pendingContent.update(dt);
+    updateSteam(content, dt);
+    if (pendingContent) {
+      pendingContent.update(dt);
+      updateSteam(pendingContent, dt);
+    }
     for (const actor of actors) actor._updateBubble();
   });
+}
+
+function updateSteam(c, dt) {
+  for (const truck of c.trucks.values()) {
+    if (truck.steam) truck.steam.update(dt);
+  }
 }
 
 // Läuft gerade eine Kamerafahrt? (Kunden-Spawn pausiert dann.)
@@ -203,6 +214,12 @@ function addWorker(truck, def) {
   worker.group.scale.setScalar(0.85);
   truck.mount.add(worker.group);
   truck.worker = worker;
+
+  // Hier wird gekocht: Dampf aus dem Dach-Lüfter
+  const steam = createSteam();
+  steam.group.position.set(-0.7, 2.6, -0.4);
+  truck.mount.add(steam.group);
+  truck.steam = steam;
 }
 
 // ---------- Gesperrt-Badges (DOM über gesperrten Trucks) ----------

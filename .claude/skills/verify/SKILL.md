@@ -65,6 +65,10 @@ das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
   `#move-btn` mit `{ force: true }` klicken (der Button pulsiert per
   CSS-Animation, Playwright hält ihn sonst für instabil). Danach: genau
   1 Canvas in `#scene`, neues Standort-Theme, keine pageerrors.
+- Performance (Phase 6): Render-Auflösung senkt sich adaptiv, wenn die
+  FPS unter ~40 fallen (Canvas-Pixel < CSS-Pixel ist unter Swiftshader
+  also NORMAL und kein Bug). Aktive Trucks haben Dampf-Puffs überm
+  Lüfter (nur im Canvas sichtbar).
 - Welt-Wechsel und Umzug laufen als GSAP-Kamerafahrt (~1,8 s, Phase 5):
   Tests nach dem Klick ~2,5 s warten, bevor Badges/Screenshots geprüft
   werden. Während der Fahrt spawnen keine Kunden (isSceneBusy).

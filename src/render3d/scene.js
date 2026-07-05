@@ -10,10 +10,14 @@ import * as THREE from 'three';
 const CAM_POS = { x: 0, y: 9.2, z: 16.5 };
 const CAM_TARGET = new THREE.Vector3(0, 1.9, -0.5);
 const SUN_OFFSET = { x: 7, y: 13, z: 9 };
+// Grundfarbe der Sonne; wird pro Standort leicht Richtung Himmelsfarbe
+// getönt (Abendhimmel = warmes Licht), siehe skyColors().
+const SUN_BASE = new THREE.Color(0xfff1d6);
 
 export function init3d(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  let pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(pixelRatio);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -34,10 +38,13 @@ export function init3d(container) {
   const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8474, 0.85);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xfff1d6, 1.6);
+  const sun = new THREE.DirectionalLight(SUN_BASE, 1.6);
   sun.position.set(SUN_OFFSET.x, SUN_OFFSET.y, SUN_OFFSET.z);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  // Kleine Screens (Handys) bekommen die halbe Schattenauflösung
+  const smallScreen = Math.min(window.screen.width, window.screen.height) < 480;
+  const shadowSize = smallScreen ? 1024 : 2048;
+  sun.shadow.mapSize.set(shadowSize, shadowSize);
   sun.shadow.camera.left = -14;
   sun.shadow.camera.right = 14;
   sun.shadow.camera.top = 14;
@@ -67,12 +74,32 @@ export function init3d(container) {
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(container);
 
+  // Adaptive Auflösung: bricht die Framerate ein (schwaches Gerät),
+  // wird die Render-Auflösung schrittweise gesenkt — Layout-Größe
+  // bleibt gleich, nur das Canvas rechnet weniger Pixel.
+  let fpsFrames = 0;
+  let fpsTime = 0;
+  function adaptQuality(dt) {
+    fpsFrames += 1;
+    fpsTime += dt;
+    if (fpsTime < 2.5) return;
+    const fps = fpsFrames / fpsTime;
+    fpsFrames = 0;
+    fpsTime = 0;
+    if (fps < 40 && pixelRatio > 0.75) {
+      pixelRatio = Math.max(0.75, pixelRatio - 0.5);
+      renderer.setPixelRatio(pixelRatio);
+      resize();
+    }
+  }
+
   let rafId = 0;
   let last = performance.now();
   function frame(now) {
     rafId = requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.1); // Tab-Wechsel abfedern
     last = now;
+    adaptQuality(dt);
     frameHooks.forEach((fn) => fn(dt, now / 1000));
     renderer.render(scene, camera);
   }
@@ -80,13 +107,15 @@ export function init3d(container) {
 
   const v = new THREE.Vector3();
 
-  // Zielfarben für Himmel/Nebel/Hemisphärenlicht aus einem Theme
+  // Zielfarben für Himmel/Nebel/Hemisphärenlicht/Sonne aus einem Theme.
+  // Die Sonne nimmt 25% der Himmelsfarbe auf — Abendrot färbt das Licht.
   function skyColors({ sky, ground }) {
     const skyColor = new THREE.Color(sky);
     return {
       bg: skyColor,
       hemiSky: skyColor.clone().lerp(new THREE.Color(0xffffff), 0.6),
       hemiGround: new THREE.Color(ground),
+      sun: SUN_BASE.clone().lerp(skyColor, 0.25),
     };
   }
 
@@ -102,6 +131,7 @@ export function init3d(container) {
       scene.fog.color.copy(c.bg);
       hemi.color.copy(c.hemiSky);
       hemi.groundColor.copy(c.hemiGround);
+      sun.color.copy(c.sun);
     },
     // Weiche Überblendung (Welt-Übergang); liefert die Tweens zurück,
     // damit der Aufrufer sie bei einem Abbruch killen kann.
@@ -113,6 +143,7 @@ export function init3d(container) {
         gsap.to(scene.fog.color, { r: c.bg.r, g: c.bg.g, b: c.bg.b, ...opts }),
         gsap.to(hemi.color, { r: c.hemiSky.r, g: c.hemiSky.g, b: c.hemiSky.b, ...opts }),
         gsap.to(hemi.groundColor, { r: c.hemiGround.r, g: c.hemiGround.g, b: c.hemiGround.b, ...opts }),
+        gsap.to(sun.color, { r: c.sun.r, g: c.sun.g, b: c.sun.b, ...opts }),
       ];
     },
     // Kamera + Sonne (samt Schatten-Frustum) seitlich versetzen
