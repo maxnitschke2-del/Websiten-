@@ -14,6 +14,9 @@ import {
   BONUS_PER_CITY,
 } from '../systems/progression.js';
 import { LOCATIONS, getLocation } from '../data/locations.js';
+import { ACHIEVEMENTS } from '../data/achievements.js';
+import { isUnlocked } from '../systems/achievements.js';
+import { playSound, toggleMute } from '../systems/sound.js';
 import { formatMoney, formatRate } from '../utils/format.js';
 import { unlockStandVisual, buildScene, startWorkerAnimations } from './scene.js';
 
@@ -34,10 +37,17 @@ export function initHud() {
   moveBtn = document.getElementById('move-btn');
   moveBtn.addEventListener('click', () => {
     if (!moveToNextLocation()) return;
+    playSound('move');
     // Neue Stadt: Szene mit neuem Theme und zurückgesetzten Ständen aufbauen
     buildScene(document.getElementById('scene'));
     startWorkerAnimations();
     updateHud();
+  });
+
+  const muteBtn = document.getElementById('mute-btn');
+  muteBtn.textContent = state.muted ? '🔇' : '🔊';
+  muteBtn.addEventListener('click', () => {
+    muteBtn.textContent = toggleMute() ? '🔇' : '🔊';
   });
   const panel = document.getElementById('panel');
 
@@ -55,6 +65,7 @@ export function initHud() {
     btn.addEventListener('click', () => {
       const wasLocked = state.stations[def.id].level === 0;
       if (tryUpgrade(def.id)) {
+        playSound(wasLocked ? 'unlock' : 'upgrade');
         if (wasLocked) unlockStandVisual(def.id);
         updateHud();
       }
@@ -62,7 +73,25 @@ export function initHud() {
     panel.appendChild(card);
     cards.set(def.id, { def, meta: card.querySelector('.station-meta'), btn });
   }
+  renderAchievements();
   updateHud();
+}
+
+// Erfolgs-Grid: freigeschaltete farbig, gesperrte ausgegraut mit Bedingung.
+export function renderAchievements() {
+  const grid = document.getElementById('ach-grid');
+  const count = document.getElementById('ach-count');
+  const unlocked = ACHIEVEMENTS.filter((a) => isUnlocked(a.id)).length;
+  count.textContent = `${unlocked}/${ACHIEVEMENTS.length}`;
+  grid.innerHTML = ACHIEVEMENTS.map((a) => {
+    const done = isUnlocked(a.id);
+    return `
+      <div class="ach-card${done ? ' done' : ''}" title="${a.desc}">
+        <span class="ach-emoji">${a.emoji}</span>
+        <span class="ach-name">${a.name}</span>
+        <span class="ach-desc">${a.desc}</span>
+      </div>`;
+  }).join('');
 }
 
 function updateLocationBar() {

@@ -10,7 +10,8 @@ import {
 import { STATIONS } from '../data/stations.js';
 import { state } from '../core/state.js';
 import { currentLocation } from './progression.js';
-import { rand } from '../utils/format.js';
+import { playSound } from './sound.js';
+import { rand, pick } from '../utils/format.js';
 
 const WALK_SPEED = 110; // Pixel pro Sekunde
 const SPAWN_DELAY_MIN = 2000;
@@ -57,6 +58,7 @@ function spawn(stationDef) {
   const bubble = el.querySelector('.bubble');
   const startX = getEntryX();
   const stopX = getStandStop(stationDef.id) - el.offsetWidth / 2 + rand(-26, 26);
+  const pace = rand(0.85, 1.25); // individuelles Lauftempo
 
   gsap.set(el, { x: startX });
   const bob = gsap.to(sprite, {
@@ -75,9 +77,12 @@ function spawn(stationDef) {
     },
   });
 
-  tl.to(el, { x: stopX, duration: walkDuration(startX, stopX), ease: 'none' })
+  tl.to(el, { x: stopX, duration: walkDuration(startX, stopX) / pace, ease: 'none' })
     // Am Stand: stehen bleiben und Bestellung zeigen
-    .call(() => bob.pause(0))
+    .call(() => {
+      bob.pause(0);
+      playSound('order');
+    })
     .to(bubble, { scale: 1, duration: 0.25, ease: 'back.out(2)' })
     .to({}, { duration: rand(1.6, 3.2) })
     .to(bubble, { scale: 0, duration: 0.15, ease: 'back.in(2)' })
@@ -86,6 +91,12 @@ function spawn(stationDef) {
       if (leavingHook) leavingHook(el);
       gsap.set(sprite, { scaleX: -1 });
       bob.play();
+      // manche Kunden zeigen beim Gehen, dass es geschmeckt hat
+      if (Math.random() < 0.45) {
+        bubble.textContent = pick(['😋', '❤️', '👍']);
+        gsap.to(bubble, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
+        gsap.to(bubble, { scale: 0, delay: 1.1, duration: 0.15 });
+      }
     })
-    .to(el, { x: startX, duration: walkDuration(stopX, startX), ease: 'none' });
+    .to(el, { x: startX, duration: walkDuration(stopX, startX) / pace, ease: 'none' });
 }

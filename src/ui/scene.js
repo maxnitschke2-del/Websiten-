@@ -3,6 +3,7 @@
 import { STATIONS } from '../data/stations.js';
 import { getLocation } from '../data/locations.js';
 import { state } from '../core/state.js';
+import { pick } from '../utils/format.js';
 
 let scene;
 
@@ -82,19 +83,57 @@ function standSvg(def) {
 </svg>`;
 }
 
-const SHIRT_COLORS = ['#4a90d9', '#7a56c2', '#3aa76d', '#d95f4a', '#c2a13a'];
+// Kunden-Varianten: Hautton, Frisur, Kleidung, Brille, Kinder.
+const SKIN_TONES = ['#f2c19a', '#e8b183', '#c68642', '#8d5524'];
+const HAIR_COLORS = ['#5b3a1e', '#2c2c2c', '#a55728', '#e0c068', '#888'];
+const HAIR_STYLES = ['round', 'round', 'cap', 'long', 'bald'];
+const SHIRT_COLORS = ['#4a90d9', '#7a56c2', '#3aa76d', '#d95f4a', '#c2a13a', '#d9639b'];
+const PANTS_COLORS = ['#3b4664', '#54432e', '#2f5d50', '#5a3b5d'];
 
-function customerSvg(shirt) {
+function randomCustomerVariant() {
+  return {
+    skin: pick(SKIN_TONES),
+    hairColor: pick(HAIR_COLORS),
+    hairStyle: pick(HAIR_STYLES),
+    shirt: pick(SHIRT_COLORS),
+    pants: pick(PANTS_COLORS),
+    glasses: Math.random() < 0.18,
+    kid: Math.random() < 0.15,
+  };
+}
+
+function hairSvg(v) {
+  switch (v.hairStyle) {
+    case 'bald':
+      return '';
+    case 'cap':
+      // Basecap mit Schirm (Blickrichtung links)
+      return `<path d="M17 14 A13 13 0 0 1 43 14 Z" fill="${v.hairColor}"/>
+        <rect x="9" y="11" width="15" height="5" rx="2.5" fill="${v.hairColor}"/>`;
+    case 'long':
+      // lange Haare fallen hinten (rechts) herunter
+      return `<path d="M17 14 A13 13 0 0 1 43 14 Z" fill="${v.hairColor}"/>
+        <rect x="37" y="12" width="8" height="24" rx="4" fill="${v.hairColor}"/>`;
+    default:
+      return `<path d="M17 13.5 A13 13 0 0 1 43 13.5 Z" fill="${v.hairColor}"/>`;
+  }
+}
+
+function customerSvg(v) {
+  const glasses = v.glasses
+    ? `<circle cx="21" cy="16" r="3.6" fill="none" stroke="#333" stroke-width="1.4"/>
+       <circle cx="29" cy="16" r="3.6" fill="none" stroke="#333" stroke-width="1.4"/>`
+    : '';
   return `
 <svg class="sprite" viewBox="0 0 60 96" xmlns="http://www.w3.org/2000/svg" aria-label="Kunde">
-  <path d="M17 15 A13 13 0 0 1 43 15 Z" fill="#5b3a1e"/>
-  <circle cx="30" cy="16" r="13" fill="#f2c19a"/>
-  <path d="M17 12 A13 13 0 0 1 43 12 L43 15 A13 10 0 0 0 17 15 Z" fill="#5b3a1e"/>
+  <circle cx="30" cy="16" r="13" fill="${v.skin}"/>
+  ${hairSvg(v)}
   <circle cx="21" cy="16" r="1.8" fill="#333"/>
   <circle cx="26" cy="16" r="1.8" fill="#333"/>
-  <rect x="16" y="28" width="28" height="38" rx="10" fill="${shirt}"/>
-  <rect x="20" y="64" width="8" height="24" rx="3" fill="#3b4664"/>
-  <rect x="32" y="64" width="8" height="24" rx="3" fill="#3b4664"/>
+  ${glasses}
+  <rect x="16" y="28" width="28" height="38" rx="10" fill="${v.shirt}"/>
+  <rect x="20" y="64" width="8" height="24" rx="3" fill="${v.pants}"/>
+  <rect x="32" y="64" width="8" height="24" rx="3" fill="${v.pants}"/>
   <rect x="15" y="85" width="13" height="6" rx="3" fill="#222"/>
   <rect x="32" y="85" width="13" height="6" rx="3" fill="#222"/>
 </svg>`;
@@ -177,8 +216,9 @@ export function unlockStandVisual(stationId) {
 export function createCustomer(orderEmoji) {
   const el = document.createElement('div');
   el.className = 'customer';
-  const shirt = SHIRT_COLORS[Math.floor(Math.random() * SHIRT_COLORS.length)];
-  el.innerHTML = customerSvg(shirt) + `<div class="bubble">${orderEmoji}</div>`;
+  const variant = randomCustomerVariant();
+  if (variant.kid) el.classList.add('kid');
+  el.innerHTML = customerSvg(variant) + `<div class="bubble">${orderEmoji}</div>`;
   scene.appendChild(el);
   gsap.set(el.querySelector('.bubble'), { xPercent: -50, scale: 0 });
   return el;

@@ -1,6 +1,7 @@
 // "Willkommen zurück"-Modal für den Offline-Verdienst.
 import { formatMoney, formatDuration } from '../utils/format.js';
 import { OFFLINE_CAP_SECONDS } from '../systems/offline.js';
+import { playSound } from '../systems/sound.js';
 
 export function showOfflineModal(result) {
   const root = document.getElementById('modal-root');
@@ -27,6 +28,7 @@ export function showOfflineModal(result) {
   root.querySelector('.modal-btn').addEventListener(
     'click',
     () => {
+      playSound('tip');
       gsap.to(overlay, {
         opacity: 0,
         duration: 0.25,

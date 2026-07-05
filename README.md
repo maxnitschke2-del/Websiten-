@@ -37,4 +37,5 @@ src/
 3. ✅ Mehrere Stationen/Personal parallel (Freischalten über unlockCost)
 4. ✅ Standort-Progression (Cap → nächste Stadt + permanenter Bonus)
 5. ✅ Offline-Progress mit 3h-Cap (Willkommen-zurück-Modal)
-6. ⬜ Polish: Kunden-Varianten, Sound-Hooks, Achievements
+6. ✅ Polish: Kunden-Varianten, Sound-Hooks (WebAudio, systems/sound.js),
+   Achievements mit Toasts (data/achievements.js + systems/achievements.js)

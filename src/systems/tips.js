@@ -4,6 +4,7 @@
 import { state } from '../core/state.js';
 import { totalIncomePerSecond } from './production.js';
 import { onCustomerLeaving } from './customers.js';
+import { playSound } from './sound.js';
 import { createTipBubble, spawnFloatingText } from '../ui/scene.js';
 import { formatMoney, rand } from '../utils/format.js';
 
@@ -61,6 +62,7 @@ function dropTip(customerEl) {
     const amount = tipAmount();
     state.money += amount;
     state.tipsCollected += 1;
+    playSound('tip');
     spawnFloatingText(x, `+$${formatMoney(amount)}`);
     gsap.to(bubble, {
       scale: 1.6,

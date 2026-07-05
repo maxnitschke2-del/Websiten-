@@ -7,6 +7,8 @@ export const state = {
   locationIndex: 0,
   stations: {}, // stationId -> { level }
   tipsCollected: 0,
+  achievements: [], // freigeschaltete Achievement-IDs
+  muted: false,
   lastSeen: Date.now(),
 };
 
