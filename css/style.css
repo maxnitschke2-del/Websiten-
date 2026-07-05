@@ -164,7 +164,7 @@ body {
 #scene {
   position: relative;
   width: 100%;
-  height: clamp(280px, 53vh, 620px);
+  height: clamp(320px, 62vh, 760px);
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--panel-border);

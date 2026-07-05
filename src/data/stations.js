@@ -18,8 +18,17 @@ export function getStation(id) {
   return getStations().find((s) => s.id === id);
 }
 
+// Einkommen wächst linear mit dem Level, plus Meilenstein-Verdopplung
+// alle 5 Level — so bleibt die steile Kosten-Kurve erspielbar und
+// Meilenstein-Level fühlen sich wie kleine Durchbrüche an.
+const MILESTONE_EVERY = 5;
+
+export function milestoneMultiplier(level) {
+  return 2 ** Math.floor(level / MILESTONE_EVERY);
+}
+
 export function incomePerSecond(def, level) {
-  return def.baseIncome * level;
+  return def.baseIncome * level * milestoneMultiplier(level);
 }
 
 // Level 0 -> Freischalt-Kosten, danach normale Upgrade-Kurve.

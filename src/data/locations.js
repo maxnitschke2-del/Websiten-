@@ -36,8 +36,8 @@ export const LOCATIONS = [
   {
     id: 'downtown',
     name: 'Innenstadt',
-    levelCap: 30,
-    incomeMult: 36,
+    levelCap: 28,
+    incomeMult: 40,
     costMult: 28,
     maxCustomers: 5,
     theme: {
@@ -51,8 +51,8 @@ export const LOCATIONS = [
   {
     id: 'beach',
     name: 'Strandpromenade',
-    levelCap: 40,
-    incomeMult: 220,
+    levelCap: 35,
+    incomeMult: 320,
     costMult: 160,
     maxCustomers: 6,
     theme: {
