@@ -123,7 +123,7 @@ function updateLocationBar() {
     locProgressEl.textContent =
       isFinalLocation() && stationsAtCap() === cards.size
         ? 'Alle Städte gemeistert! 🎉'
-        : `${stationsAtCap()}/${cards.size} Stationen am Max (Cap: Level ${levelCap()})`;
+        : `${stationsAtCap()}/${cards.size} am Max · Cap ${levelCap()}`;
   }
 }
 

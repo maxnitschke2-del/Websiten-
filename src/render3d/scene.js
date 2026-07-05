@@ -9,6 +9,12 @@ import * as THREE from 'three';
 // Umherfahren, dadurch mobile-tauglich und vorhersagbare Projektion.
 const CAM_POS = { x: 0, y: 9.2, z: 16.5 };
 const CAM_TARGET = new THREE.Vector3(0, 1.9, -0.5);
+// Referenz-Framing: bei 16:9 sorgt REF_FOV dafür, dass die komplette
+// Truck-Reihe samt Rand sichtbar ist. Bei schmaleren Formaten (Handy-
+// Portrait) wird das vertikale FOV so vergrößert, dass die HORIZONTALE
+// Bildbreite gleich bleibt — die Straße ist immer ganz im Bild.
+const REF_ASPECT = 16 / 9;
+const REF_FOV = 34;
 const SUN_OFFSET = { x: 7, y: 13, z: 9 };
 // Grundfarbe der Sonne; wird pro Standort leicht Richtung Himmelsfarbe
 // getönt (Abendhimmel = warmes Licht), siehe skyColors().
@@ -29,7 +35,7 @@ export function init3d(container) {
   scene.background = bgColor;
   scene.fog = new THREE.Fog(bgColor.clone(), 32, 70);
 
-  const camera = new THREE.PerspectiveCamera(32, 16 / 9, 0.1, 200);
+  const camera = new THREE.PerspectiveCamera(REF_FOV, REF_ASPECT, 0.1, 200);
   camera.position.set(CAM_POS.x, CAM_POS.y, CAM_POS.z);
   camera.lookAt(CAM_TARGET);
 
@@ -60,6 +66,7 @@ export function init3d(container) {
 
   const frameHooks = new Set();
   const resizeHooks = new Set();
+  let viewOffsetX = 0; // seitlicher Versatz während der Kamerafahrt
 
   function resize() {
     const w = container.clientWidth;
@@ -67,6 +74,22 @@ export function init3d(container) {
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    camera.fov =
+      camera.aspect >= REF_ASPECT
+        ? REF_FOV
+        : (Math.atan(
+            Math.tan((REF_FOV * Math.PI) / 360) * (REF_ASPECT / camera.aspect)
+          ) *
+            360) /
+          Math.PI;
+    // Schmale Formate zeigen mehr Vertikale: den Zugewinn Richtung
+    // Stadt/Himmel neigen statt leere Plaza im Vordergrund zu zeigen.
+    const extraFov = camera.fov - REF_FOV;
+    camera.lookAt(
+      CAM_TARGET.x + viewOffsetX,
+      CAM_TARGET.y + extraFov * 0.035,
+      CAM_TARGET.z
+    );
     camera.updateProjectionMatrix();
     resizeHooks.forEach((fn) => fn());
   }
@@ -148,6 +171,7 @@ export function init3d(container) {
     },
     // Kamera + Sonne (samt Schatten-Frustum) seitlich versetzen
     setViewOffset(x) {
+      viewOffsetX = x;
       camera.position.x = CAM_POS.x + x;
       sun.position.x = SUN_OFFSET.x + x;
       sun.target.position.x = x;

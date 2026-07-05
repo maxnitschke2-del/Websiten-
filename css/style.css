@@ -26,10 +26,10 @@ body {
 #app {
   max-width: 760px;
   margin: 0 auto;
-  padding: 12px 12px 32px;
+  padding: 10px 12px 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* ---------- HUD ---------- */
@@ -158,11 +158,13 @@ body {
 
 /* ---------- Szene ---------- */
 
+/* Die 3D-Szene ist die Bühne: nimmt gut die halbe Viewport-Höhe ein.
+   Das Seitenverhältnis darf variieren — die Kamera passt ihr FOV an,
+   damit die Straße immer komplett sichtbar bleibt (render3d/scene.js). */
 #scene {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: 62vh;
+  height: clamp(280px, 53vh, 620px);
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--panel-border);
@@ -265,36 +267,49 @@ body {
 #panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
+/* Kompakte Karten: Icon + Name + Level in einer Zeile, damit die
+   3D-Szene den vertikalen Platz bekommt. */
 .station-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 6px 10px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
-.station-emoji { font-size: 2rem; }
+.station-emoji { font-size: 1.3rem; }
 
-.station-info { flex: 1; min-width: 0; }
+.station-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-.station-name { font-weight: 700; }
+.station-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
 
 .station-meta {
   color: var(--text-dim);
-  font-size: 0.85rem;
-  margin-top: 2px;
+  font-size: 0.8rem;
 }
 
 .upgrade-btn {
   border: none;
   border-radius: 10px;
-  padding: 10px 16px;
+  padding: 7px 12px;
   font: inherit;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   color: #2b1c00;
