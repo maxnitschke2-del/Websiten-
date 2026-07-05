@@ -34,7 +34,7 @@ src/
 
 1. ✅ Restaurant-Szene: 1 Stand, 1 Personal-Sprite, 1 Kunde (rein/raus, GSAP)
 2. ✅ Tap-to-Collect: Trinkgeld-Bubbles (src/systems/tips.js)
-3. ⬜ Mehrere Stationen/Personal parallel
+3. ✅ Mehrere Stationen/Personal parallel (Freischalten über unlockCost)
 4. ⬜ Standort-Progression (Cap → nächste Stadt + permanenter Bonus)
 5. ⬜ Offline-Progress mit 3h-Cap
 6. ⬜ Polish: Kunden-Varianten, Sound-Hooks, Achievements

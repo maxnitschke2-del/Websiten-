@@ -38,3 +38,6 @@ das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
   `beforeunload`-Save wieder überschrieben — für Corrupt-Save-Tests einen
   frischen `browser.newContext()` verwenden.
 - Mobile-Viewport 375 px gegenprüfen (Layout ist flex/percentage-basiert).
+- Stationen freischalten: Spielstand vorab per `addInitScript` in localStorage
+  legen (Key `foodtruck-idle-v1`, z. B. `{"money":800}`), dann Unlock-Button
+  klicken → `.stand[data-station=…]` verliert `locked`, Einkommen/s steigt.

@@ -101,18 +101,36 @@ body {
 
 .stand {
   position: absolute;
-  left: 6%;
   bottom: 16%;
-  width: clamp(180px, 36%, 300px);
+  width: clamp(120px, 26%, 220px);
   z-index: 2;
 }
 
 .stand svg { display: block; width: 100%; height: auto; }
 
+.stand.locked svg {
+  filter: grayscale(1) brightness(0.9);
+  opacity: 0.5;
+}
+
+.stand.locked .worker-g { display: none; }
+
+.stand-lock {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(20px, 4vw, 34px);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.stand.locked .stand-lock { display: block; }
+
 .customer {
   position: absolute;
   left: 0;
-  bottom: 17%;
+  bottom: 14%;
   width: clamp(38px, 8%, 64px);
   z-index: 3;
   will-change: transform;

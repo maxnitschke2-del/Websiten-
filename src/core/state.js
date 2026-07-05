@@ -12,7 +12,9 @@ export const state = {
 
 function ensureStations() {
   for (const def of STATIONS) {
-    if (!state.stations[def.id]) state.stations[def.id] = { level: 1 };
+    if (!state.stations[def.id]) {
+      state.stations[def.id] = { level: def.unlockCost > 0 ? 0 : 1 };
+    }
   }
 }
 

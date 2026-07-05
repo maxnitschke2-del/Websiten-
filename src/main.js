@@ -3,12 +3,12 @@ import { startLoop } from './core/loop.js';
 import { tick } from './systems/production.js';
 import { startCustomers } from './systems/customers.js';
 import { initTips } from './systems/tips.js';
-import { buildScene, startWorkerAnimation } from './ui/scene.js';
+import { buildScene, startWorkerAnimations } from './ui/scene.js';
 import { initHud, updateHud } from './ui/hud.js';
 
 loadState();
 buildScene(document.getElementById('scene'));
-startWorkerAnimation();
+startWorkerAnimations();
 initHud();
 initTips();
 startCustomers();

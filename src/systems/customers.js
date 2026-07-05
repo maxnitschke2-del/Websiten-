@@ -1,14 +1,23 @@
-// Kunden-System: lässt Kunden animiert zum Stand laufen, kurz warten
-// (bestellen) und wieder rausgehen. In Phase 1 rein visuell — ab Phase 2
-// hängt sich das Trinkgeld-System (systems/tips.js) an den Leaving-Hook.
-import { createCustomer, removeCustomer, getWalkPositions } from '../ui/scene.js';
+// Kunden-System: lässt Kunden animiert zu einer zufälligen freigeschalteten
+// Station laufen, kurz warten (bestellen) und wieder rausgehen. Beim
+// Rausgehen feuert der Leaving-Hook (Trinkgeld, systems/tips.js).
+import {
+  createCustomer,
+  removeCustomer,
+  getStandStop,
+  getEntryX,
+} from '../ui/scene.js';
+import { STATIONS } from '../data/stations.js';
+import { state } from '../core/state.js';
 import { rand } from '../utils/format.js';
 
 const WALK_SPEED = 110; // Pixel pro Sekunde
-const SPAWN_DELAY_MIN = 2500;
-const SPAWN_DELAY_MAX = 6000;
+const SPAWN_DELAY_MIN = 2000;
+const SPAWN_DELAY_MAX = 5000;
+const MAX_CUSTOMERS = 3;
 
 let leavingHook = null;
+let activeCustomers = 0;
 
 export function onCustomerLeaving(fn) {
   leavingHook = fn;
@@ -19,18 +28,33 @@ export function startCustomers() {
 }
 
 function schedule(delay = rand(SPAWN_DELAY_MIN, SPAWN_DELAY_MAX)) {
-  setTimeout(spawn, delay);
+  setTimeout(tickSpawn, delay);
+}
+
+function unlockedStations() {
+  return STATIONS.filter((def) => state.stations[def.id].level > 0);
+}
+
+// Pro freigeschalteter Station darf ein Kunde gleichzeitig da sein.
+function tickSpawn() {
+  const targets = unlockedStations();
+  if (activeCustomers < Math.min(targets.length, MAX_CUSTOMERS)) {
+    spawn(targets[Math.floor(Math.random() * targets.length)]);
+  }
+  schedule();
 }
 
 function walkDuration(from, to) {
   return Math.abs(to - from) / WALK_SPEED;
 }
 
-function spawn() {
-  const el = createCustomer();
+function spawn(stationDef) {
+  activeCustomers += 1;
+  const el = createCustomer(stationDef.emoji);
   const sprite = el.querySelector('.sprite');
   const bubble = el.querySelector('.bubble');
-  const { startX, counterX, exitX } = getWalkPositions();
+  const startX = getEntryX();
+  const stopX = getStandStop(stationDef.id) - el.offsetWidth / 2 + rand(-14, 14);
 
   gsap.set(el, { x: startX });
   const bob = gsap.to(sprite, {
@@ -45,11 +69,11 @@ function spawn() {
     onComplete() {
       bob.kill();
       removeCustomer(el);
-      schedule();
+      activeCustomers -= 1;
     },
   });
 
-  tl.to(el, { x: counterX, duration: walkDuration(startX, counterX), ease: 'none' })
+  tl.to(el, { x: stopX, duration: walkDuration(startX, stopX), ease: 'none' })
     // Am Stand: stehen bleiben und Bestellung zeigen
     .call(() => bob.pause(0))
     .to(bubble, { scale: 1, duration: 0.25, ease: 'back.out(2)' })
@@ -61,5 +85,5 @@ function spawn() {
       gsap.set(sprite, { scaleX: -1 });
       bob.play();
     })
-    .to(el, { x: exitX, duration: walkDuration(counterX, exitX), ease: 'none' });
+    .to(el, { x: startX, duration: walkDuration(stopX, startX), ease: 'none' });
 }

@@ -3,6 +3,7 @@ import { STATIONS, incomePerSecond } from '../data/stations.js';
 import { totalIncomePerSecond } from '../systems/production.js';
 import { costFor, canUpgrade, tryUpgrade } from '../systems/upgrades.js';
 import { formatMoney, formatRate } from '../utils/format.js';
+import { unlockStandVisual } from './scene.js';
 
 let moneyEl;
 let incomeEl;
@@ -25,7 +26,11 @@ export function initHud() {
       <button class="upgrade-btn"></button>`;
     const btn = card.querySelector('.upgrade-btn');
     btn.addEventListener('click', () => {
-      if (tryUpgrade(def.id)) updateHud();
+      const wasLocked = state.stations[def.id].level === 0;
+      if (tryUpgrade(def.id)) {
+        if (wasLocked) unlockStandVisual(def.id);
+        updateHud();
+      }
     });
     panel.appendChild(card);
     cards.set(def.id, { def, meta: card.querySelector('.station-meta'), btn });
@@ -38,8 +43,13 @@ export function updateHud() {
   incomeEl.textContent = `$${formatRate(totalIncomePerSecond())}`;
   for (const { def, meta, btn } of cards.values()) {
     const level = state.stations[def.id].level;
-    meta.textContent = `Level ${level} · $${formatRate(incomePerSecond(def, level))}/s`;
-    btn.textContent = `Upgrade $${formatMoney(costFor(def.id))}`;
+    if (level === 0) {
+      meta.textContent = `Gesperrt · bringt $${formatRate(incomePerSecond(def, 1))}/s`;
+      btn.textContent = `Freischalten $${formatMoney(costFor(def.id))}`;
+    } else {
+      meta.textContent = `Level ${level} · $${formatRate(incomePerSecond(def, level))}/s`;
+      btn.textContent = `Upgrade $${formatMoney(costFor(def.id))}`;
+    }
     btn.disabled = !canUpgrade(def.id);
   }
 }
