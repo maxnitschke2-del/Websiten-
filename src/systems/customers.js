@@ -7,6 +7,7 @@ import {
   removeCustomer,
   getStandStop,
   getEntryX,
+  isSceneBusy,
 } from '../ui/scene.js';
 import { getStations } from '../data/stations.js';
 import { state } from '../core/state.js';
@@ -40,6 +41,11 @@ function unlockedStations() {
 // Kapazität wächst mit dem Standort (maxCustomers), begrenzt auf
 // maximal zwei Kunden je freigeschalteter Station.
 function tickSpawn() {
+  // Während der Kamerafahrt (Welt-/Stadt-Wechsel) niemanden spawnen
+  if (isSceneBusy()) {
+    schedule();
+    return;
+  }
   const targets = unlockedStations();
   const capacity = Math.min(targets.length * 2, currentLocation().maxCustomers);
   if (activeCustomers < capacity) {

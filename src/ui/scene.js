@@ -1,8 +1,13 @@
 // Szenen-Schicht: baut die 3D-Welt (Three.js, src/render3d/) und stellt
-// der Spiel-Logik eine schlanke API bereit. Seit Phase 2 sind Kunden und
-// Personal Low-Poly-3D-Figuren; nur noch Sprechblasen, Trinkgeld-Bubbles
-// und Schwebe-Texte sind DOM-Elemente im Overlay (antippbar/knackscharf),
-// positioniert über die Kamera-Projektion.
+// der Spiel-Logik eine schlanke API bereit. Kunden und Personal sind
+// Low-Poly-3D-Figuren; Sprechblasen, Trinkgeld-Bubbles und Schwebe-Texte
+// sind DOM-Elemente im Overlay (antippbar/knackscharf), positioniert
+// über die Kamera-Projektion.
+//
+// Welt-Wechsel und Stadt-Umzug laufen als Kamerafahrt (Phase 5): die
+// neue Kulisse entsteht seitlich versetzt, die Kamera schwenkt hinüber,
+// der Himmel blendet über, danach wird die alte Kulisse entsorgt.
+import * as THREE from 'three';
 import { getStations } from '../data/stations.js';
 import { getLocation } from '../data/locations.js';
 import { getWorld } from '../data/worlds.js';
@@ -17,54 +22,47 @@ import {
   randomCustomerVariant,
 } from '../render3d/models/person.js';
 
-// Truck-Positionen auf der Plaza (x in Weltkoordinaten); seit Phase 3
-// hat jede Welt 4 Trucks, deshalb etwas kleiner skaliert.
+// Truck-Positionen auf der Plaza (x in Weltkoordinaten); jede Welt hat
+// 4 Trucks, deshalb etwas kleiner skaliert.
 const TRUCK_XS = [-6.9, -2.3, 2.3, 6.9];
 const TRUCK_SCALE = 0.82;
 // Kunden laufen auf dieser z-Spur (vor den Trucks) ein und aus
 const ENTRY_X = 13;
+// Kamerafahrt beim Welt-/Stadt-Wechsel: Versatz > Kulissen-Breite (80)
+const TRANSITION_DIST = 96;
+const TRANSITION_SECS = 1.8;
 
+let sceneRoot = null;
 let r3d = null;
 let overlay = null;
+let content = null; // aktive Kulisse { group, trucks, update, sky }
+let pendingContent = null; // Ziel-Kulisse während der Kamerafahrt
+let transitioning = false;
 let trucks = new Map(); // stationId -> Truck-Handle + worker
 let lockBadges = new Map(); // stationId -> DOM-Element
 let idleTweens = [];
+let transitionTweens = [];
 let actors = new Set(); // aktive Kunden-Aktoren
 
-// ---------- Aufbau / Teardown ----------
+// ---------- Kulissen-Bau ----------
 
-function teardown() {
-  for (const tw of idleTweens) tw.kill();
-  idleTweens = [];
-  for (const actor of actors) actor._kill();
-  actors = new Set();
-  if (r3d) r3d.dispose();
-  r3d = null;
-  trucks = new Map();
-  lockBadges = new Map();
-}
-
-export function buildScene(root) {
-  teardown();
-  root.innerHTML = '';
-
-  r3d = init3d(root);
-  overlay = document.createElement('div');
-  overlay.className = 'scene-overlay';
-  root.appendChild(overlay);
-
+// Baut die komplette Kulisse (Umgebung + Trucks) der aktiven Welt/Stadt
+// als eigene Gruppe bei x-Versatz `xOffset`.
+function buildWorldContent(xOffset) {
   const loc = getLocation(state.locationIndex).theme;
   const world = getWorld(state.worldIndex);
-  r3d.setSky({ sky: loc.skyTop, ground: loc.ground });
+
+  const group = new THREE.Group();
+  group.position.x = xOffset;
 
   const env = buildEnvironment({
     loc,
     env: world.env,
     seed: state.worldIndex * 101 + state.locationIndex,
   });
-  r3d.add(env.group);
-  r3d.onFrame(env.update);
+  group.add(env.group);
 
+  const trucksMap = new Map();
   getStations().forEach((def, i) => {
     const truck = createFoodtruck(def.truck, def);
     truck.group.position.x = TRUCK_XS[i];
@@ -72,16 +70,127 @@ export function buildScene(root) {
     const locked = state.stations[def.id].level === 0;
     truck.setLocked(locked);
     if (!locked) addWorker(truck, def);
-    r3d.add(truck.group);
-    trucks.set(def.id, truck);
+    group.add(truck.group);
+    trucksMap.set(def.id, truck);
   });
+
+  return {
+    group,
+    trucks: trucksMap,
+    update: env.update,
+    sky: { sky: loc.skyTop, ground: loc.ground },
+  };
+}
+
+function disposeContent(c) {
+  c.group.parent?.remove(c.group);
+  c.group.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const m of mats) {
+        if (m.map) m.map.dispose();
+        m.dispose();
+      }
+    }
+  });
+}
+
+// ---------- Aufbau / Teardown ----------
+
+function teardown() {
+  for (const tw of [...idleTweens, ...transitionTweens]) tw.kill();
+  idleTweens = [];
+  transitionTweens = [];
+  transitioning = false;
+  for (const actor of actors) actor._kill();
+  actors = new Set();
+  if (r3d) r3d.dispose();
+  r3d = null;
+  content = null;
+  pendingContent = null;
+  trucks = new Map();
+  lockBadges = new Map();
+}
+
+export function buildScene(root) {
+  teardown();
+  sceneRoot = root;
+  root.innerHTML = '';
+
+  r3d = init3d(root);
+  overlay = document.createElement('div');
+  overlay.className = 'scene-overlay';
+  root.appendChild(overlay);
+
+  content = buildWorldContent(0);
+  r3d.add(content.group);
+  r3d.setSky(content.sky);
+  trucks = content.trucks;
 
   updateLockBadges();
   r3d.onResize(updateLockBadges);
-  // Sprechblasen folgen den Figurenköpfen
-  r3d.onFrame(() => {
+  r3d.onFrame((dt) => {
+    content.update(dt);
+    if (pendingContent) pendingContent.update(dt);
     for (const actor of actors) actor._updateBubble();
   });
+}
+
+// Läuft gerade eine Kamerafahrt? (Kunden-Spawn pausiert dann.)
+export function isSceneBusy() {
+  return transitioning;
+}
+
+// Kamerafahrt zur neuen Welt/Stadt. Der Spiel-Zustand (state) muss
+// vorher schon umgeschaltet sein — hier passiert nur Optik.
+// dir: +1 = nach rechts (vorwärts), -1 = nach links (zurück).
+export function transitionScene(dir = 1) {
+  if (!r3d) return;
+  if (transitioning) {
+    // Notausstieg: laufende Fahrt abbrechen und hart neu bauen
+    buildScene(sceneRoot);
+    return;
+  }
+  transitioning = true;
+
+  // Alte Kunden + Personal-Animationen + Badges räumen
+  for (const actor of Array.from(actors)) actor._kill();
+  actors.clear();
+  for (const tw of idleTweens) tw.kill();
+  idleTweens = [];
+  for (const badge of lockBadges.values()) badge.remove();
+  lockBadges.clear();
+
+  const old = content;
+  pendingContent = buildWorldContent(dir * TRANSITION_DIST);
+  r3d.add(pendingContent.group);
+  trucks = pendingContent.trucks; // Wirtschaft zeigt schon auf die neue Welt
+  startWorkerAnimations();
+
+  const drive = { x: 0 };
+  transitionTweens = [
+    gsap.to(drive, {
+      x: dir * TRANSITION_DIST,
+      duration: TRANSITION_SECS,
+      ease: 'power2.inOut',
+      onUpdate() {
+        r3d.setViewOffset(drive.x);
+        updateLockBadges();
+      },
+      onComplete() {
+        disposeContent(old);
+        pendingContent.group.position.x = 0;
+        content = pendingContent;
+        pendingContent = null;
+        r3d.setViewOffset(0);
+        transitionTweens = [];
+        transitioning = false;
+        updateLockBadges();
+      },
+    }),
+    ...r3d.tweenSky(pendingContent.sky, TRANSITION_SECS),
+  ];
 }
 
 // ---------- Personal ----------
@@ -175,9 +284,9 @@ export function unlockStandVisual(stationId) {
   updateLockBadges();
   animateTruck(truck);
   gsap.from(truck.group.scale, {
-    x: 0.82,
-    y: 0.82,
-    z: 0.82,
+    x: TRUCK_SCALE * 0.82,
+    y: TRUCK_SCALE * 0.82,
+    z: TRUCK_SCALE * 0.82,
     duration: 0.5,
     ease: 'back.out(2)',
   });
@@ -265,6 +374,7 @@ export function createCustomer() {
       bubble.style.top = `${px.y}px`;
     },
     _kill() {
+      if (this.dead) return;
       this.dead = true;
       gsap.killTweensOf(bubble);
       bubble.remove();

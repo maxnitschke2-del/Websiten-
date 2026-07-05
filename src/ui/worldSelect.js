@@ -14,7 +14,7 @@ import {
 } from '../systems/worlds.js';
 import { playSound } from '../systems/sound.js';
 import { formatMoney } from '../utils/format.js';
-import { buildScene, startWorkerAnimations } from './scene.js';
+import { transitionScene } from './scene.js';
 import { rebuildStationCards, updateHud } from './hud.js';
 import { showToast } from './toast.js';
 
@@ -24,9 +24,9 @@ export function initWorldSelect() {
     .addEventListener('click', openWorldSelect);
 }
 
-function applyWorldChange() {
-  buildScene(document.getElementById('scene'));
-  startWorkerAnimations();
+// dir: Kamerafahrt-Richtung (+1 = vorwärts zu höheren Welten)
+function applyWorldChange(dir) {
+  transitionScene(dir);
   rebuildStationCards();
   updateHud();
 }
@@ -128,9 +128,10 @@ export function openWorldSelect() {
   for (const btn of root.querySelectorAll('.world-switch-btn')) {
     btn.addEventListener('click', () => {
       const index = Number(btn.closest('.world-card').dataset.world);
+      const dir = index > state.worldIndex ? 1 : -1;
       if (!switchWorld(index)) return;
       playSound('move');
-      applyWorldChange();
+      applyWorldChange(dir);
       close();
     });
   }
@@ -144,7 +145,7 @@ export function openWorldSelect() {
       showToast(
         `${WORLDS[index].signature.emoji} <b>${WORLDS[index].name}</b><br>Neue Welt freigeschaltet!`
       );
-      applyWorldChange();
+      applyWorldChange(1);
       close();
     });
   }

@@ -19,7 +19,7 @@ import { ACHIEVEMENTS } from '../data/achievements.js';
 import { isUnlocked } from '../systems/achievements.js';
 import { playSound, toggleMute } from '../systems/sound.js';
 import { formatMoney, formatRate } from '../utils/format.js';
-import { unlockStandVisual, buildScene, startWorkerAnimations } from './scene.js';
+import { unlockStandVisual, transitionScene } from './scene.js';
 
 let moneyEl;
 let incomeEl;
@@ -40,9 +40,8 @@ export function initHud() {
   moveBtn.addEventListener('click', () => {
     if (!moveToNextLocation()) return;
     playSound('move');
-    // Neue Stadt: Szene mit neuem Theme und zurückgesetzten Ständen aufbauen
-    buildScene(document.getElementById('scene'));
-    startWorkerAnimations();
+    // Neue Stadt: Kamerafahrt zur frisch gebauten Kulisse
+    transitionScene(1);
     updateHud();
   });
 
