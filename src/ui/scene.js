@@ -148,6 +148,34 @@ export function removeCustomer(el) {
   el.remove();
 }
 
+// Antippbare Trinkgeld-Bubble (Logik in systems/tips.js).
+export function createTipBubble(x) {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'tip-bubble';
+  el.setAttribute('aria-label', 'Trinkgeld einsammeln');
+  el.textContent = '💰';
+  scene.appendChild(el);
+  gsap.set(el, { x, scale: 0 });
+  return el;
+}
+
+// Aufsteigender "+$X"-Text als Sammel-Feedback.
+export function spawnFloatingText(x, text) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  scene.appendChild(el);
+  gsap.set(el, { x });
+  gsap.to(el, {
+    y: -50,
+    opacity: 0,
+    duration: 1.1,
+    ease: 'power1.out',
+    onComplete: () => el.remove(),
+  });
+}
+
 // Laufpunkte für Kunden: kommen von rechts, halten rechts neben dem Stand.
 export function getWalkPositions() {
   const standEl = scene.querySelector('.stand');

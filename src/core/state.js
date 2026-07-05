@@ -6,6 +6,7 @@ export const state = {
   money: 0,
   locationIndex: 0,
   stations: {}, // stationId -> { level }
+  tipsCollected: 0,
   lastSeen: Date.now(),
 };
 

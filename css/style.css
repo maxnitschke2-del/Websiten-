@@ -143,6 +143,42 @@ body {
   border-top-color: #fff;
 }
 
+.tip-bubble {
+  position: absolute;
+  left: 0;
+  bottom: 23%;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid #e0a51f;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe17a, #ffb02e);
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
+}
+
+.float-text {
+  position: absolute;
+  left: 0;
+  bottom: 32%;
+  z-index: 5;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #1d7a34;
+  text-shadow:
+    0 1px 0 #fff, 0 -1px 0 #fff,
+    1px 0 0 #fff, -1px 0 0 #fff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* ---------- Panel / Stationen ---------- */
 
 #panel {
