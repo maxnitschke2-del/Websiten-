@@ -304,3 +304,58 @@ body {
   filter: grayscale(0.9) brightness(0.6);
   cursor: not-allowed;
 }
+
+/* ---------- Modal (Offline-Verdienst) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 8, 14, 0.72);
+}
+
+.modal-card {
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 24px 20px;
+}
+
+.modal-emoji { font-size: 2.4rem; }
+
+.modal-card h2 { margin: 8px 0 4px; }
+
+.modal-card p {
+  margin: 6px 0;
+  color: var(--text-dim);
+}
+
+.modal-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--good);
+  margin: 10px 0;
+}
+
+.modal-cap-note {
+  font-size: 0.85rem;
+}
+
+.modal-btn {
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: #2b1c00;
+  background: linear-gradient(var(--accent), var(--accent-dark));
+}

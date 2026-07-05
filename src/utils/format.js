@@ -16,6 +16,16 @@ export function formatRate(perSecond) {
   return formatMoney(perSecond);
 }
 
+export function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const hours = Math.floor(mins / 60);
+  if (hours > 0) {
+    const rest = mins % 60;
+    return rest ? `${hours} Std. ${rest} Min.` : `${hours} Std.`;
+  }
+  return `${Math.max(1, mins)} Min.`;
+}
+
 export function rand(min, max) {
   return min + Math.random() * (max - min);
 }

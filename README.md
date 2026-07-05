@@ -36,5 +36,5 @@ src/
 2. ✅ Tap-to-Collect: Trinkgeld-Bubbles (src/systems/tips.js)
 3. ✅ Mehrere Stationen/Personal parallel (Freischalten über unlockCost)
 4. ✅ Standort-Progression (Cap → nächste Stadt + permanenter Bonus)
-5. ⬜ Offline-Progress mit 3h-Cap
+5. ✅ Offline-Progress mit 3h-Cap (Willkommen-zurück-Modal)
 6. ⬜ Polish: Kunden-Varianten, Sound-Hooks, Achievements
