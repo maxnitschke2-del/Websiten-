@@ -1,31 +1,41 @@
-// Szenen-Schicht: baut die 3D-Welt (Three.js, src/render3d/) und hält
-// dieselbe API wie die frühere 2D-Szene, damit customers/tips/hud
-// unverändert funktionieren. Kunden + Trinkgeld-Bubbles bleiben bis
-// Phase 2 DOM-Sprites in einem Overlay über dem Canvas; ihre Positionen
-// kommen aus der Projektion der Truck-Positionen.
+// Szenen-Schicht: baut die 3D-Welt (Three.js, src/render3d/) und stellt
+// der Spiel-Logik eine schlanke API bereit. Seit Phase 2 sind Kunden und
+// Personal Low-Poly-3D-Figuren; nur noch Sprechblasen, Trinkgeld-Bubbles
+// und Schwebe-Texte sind DOM-Elemente im Overlay (antippbar/knackscharf),
+// positioniert über die Kamera-Projektion.
 import { STATIONS } from '../data/stations.js';
 import { getLocation } from '../data/locations.js';
 import { getWorld } from '../data/worlds.js';
 import { state } from '../core/state.js';
-import { pick } from '../utils/format.js';
+import { rand } from '../utils/format.js';
 import { init3d } from '../render3d/scene.js';
 import { createFoodtruck } from '../render3d/models/foodtruck.js';
 import { buildEnvironment } from '../render3d/models/environment.js';
+import {
+  createPerson,
+  createWorker,
+  randomCustomerVariant,
+} from '../render3d/models/person.js';
 
 // Truck-Positionen auf der Plaza (x in Weltkoordinaten)
 const TRUCK_XS = [-6.0, 0, 6.0];
+// Kunden laufen auf dieser z-Spur (vor den Trucks) ein und aus
+const ENTRY_X = 13;
 
 let r3d = null;
 let overlay = null;
-let trucks = new Map(); // stationId -> { group, awning, sign, vent, setLocked }
+let trucks = new Map(); // stationId -> Truck-Handle + worker
 let lockBadges = new Map(); // stationId -> DOM-Element
 let idleTweens = [];
+let actors = new Set(); // aktive Kunden-Aktoren
 
 // ---------- Aufbau / Teardown ----------
 
 function teardown() {
   for (const tw of idleTweens) tw.kill();
   idleTweens = [];
+  for (const actor of actors) actor._kill();
+  actors = new Set();
   if (r3d) r3d.dispose();
   r3d = null;
   trucks = new Map();
@@ -56,13 +66,31 @@ export function buildScene(root) {
   STATIONS.forEach((def, i) => {
     const truck = createFoodtruck(world.trucks[def.id], def);
     truck.group.position.x = TRUCK_XS[i];
-    truck.setLocked(state.stations[def.id].level === 0);
+    const locked = state.stations[def.id].level === 0;
+    truck.setLocked(locked);
+    if (!locked) addWorker(truck, def);
     r3d.add(truck.group);
     trucks.set(def.id, truck);
   });
 
   updateLockBadges();
   r3d.onResize(updateLockBadges);
+  // Sprechblasen folgen den Figurenköpfen
+  r3d.onFrame(() => {
+    for (const actor of actors) actor._updateBubble();
+  });
+}
+
+// ---------- Personal ----------
+
+function addWorker(truck, def) {
+  const worker = createWorker(getWorld(0).trucks[def.id]);
+  // Im Verkaufsfenster: Oberkörper + Kopf ragen vor der dunklen
+  // Fensterplatte (z=0.74) auf, Beine stecken unsichtbar im Korpus.
+  worker.group.position.set(0.35, 0.5, 0.72);
+  worker.group.scale.setScalar(0.85);
+  truck.mount.add(worker.group);
+  truck.worker = worker;
 }
 
 // ---------- Gesperrt-Badges (DOM über gesperrten Trucks) ----------
@@ -94,7 +122,8 @@ function updateLockBadges() {
 // ---------- Truck-Leben (Idle-Animationen) ----------
 
 function animateTruck(truck) {
-  // Dach-Schild wippt leicht, Lüfter-Hut dreht sich: "hier wird gearbeitet".
+  // Schild wippt, Lüfter-Hut dreht — und das Personal arbeitet:
+  // Arm hackt Richtung Tresen, Körper wippt mit.
   idleTweens.push(
     gsap.to(truck.sign.position, {
       y: truck.sign.position.y + 0.06,
@@ -108,15 +137,24 @@ function animateTruck(truck) {
       duration: 3.5,
       repeat: -1,
       ease: 'none',
-    }),
-    gsap.to(truck.awning.rotation, {
-      x: 0.56,
-      duration: 2.2,
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut',
     })
   );
+  if (truck.worker) {
+    idleTweens.push(
+      gsap.fromTo(
+        truck.worker.armR.rotation,
+        { x: -1.15 },
+        { x: -0.55, duration: 0.35, repeat: -1, yoyo: true, ease: 'power1.inOut' }
+      ),
+      gsap.to(truck.worker.group.position, {
+        y: truck.worker.group.position.y + 0.035,
+        duration: 0.35,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      })
+    );
+  }
 }
 
 export function startWorkerAnimations() {
@@ -125,11 +163,12 @@ export function startWorkerAnimations() {
   }
 }
 
-// Nach dem Freischalten: Farben zurück, Badge weg, Pop-Effekt.
+// Nach dem Freischalten: Farben zurück, Personal einstellen, Pop-Effekt.
 export function unlockStandVisual(stationId) {
   const truck = trucks.get(stationId);
   if (!truck) return;
   truck.setLocked(false);
+  if (!truck.worker) addWorker(truck, STATIONS.find((s) => s.id === stationId));
   updateLockBadges();
   animateTruck(truck);
   gsap.from(truck.group.scale, {
@@ -141,74 +180,100 @@ export function unlockStandVisual(stationId) {
   });
 }
 
-// ---------- Kunden als DOM-Sprites (bis Phase 2) ----------
+// ---------- Kunden als 3D-Figuren ----------
 
-const SKIN_TONES = ['#f2c19a', '#e8b183', '#c68642', '#8d5524'];
-const HAIR_COLORS = ['#5b3a1e', '#2c2c2c', '#a55728', '#e0c068', '#888'];
-const HAIR_STYLES = ['round', 'round', 'cap', 'long', 'bald'];
-const SHIRT_COLORS = ['#4a90d9', '#7a56c2', '#3aa76d', '#d95f4a', '#c2a13a', '#d9639b'];
-const PANTS_COLORS = ['#3b4664', '#54432e', '#2f5d50', '#5a3b5d'];
+// Kürzester Dreh zum Zielwinkel (statt 270°-Pirouette)
+function turnTo(group, target, duration = 0.2) {
+  const cur = group.rotation.y;
+  let delta = (target - cur) % (Math.PI * 2);
+  if (delta > Math.PI) delta -= Math.PI * 2;
+  if (delta < -Math.PI) delta += Math.PI * 2;
+  gsap.to(group.rotation, { y: cur + delta, duration, ease: 'power1.out' });
+}
 
-function randomCustomerVariant() {
-  return {
-    skin: pick(SKIN_TONES),
-    hairColor: pick(HAIR_COLORS),
-    hairStyle: pick(HAIR_STYLES),
-    shirt: pick(SHIRT_COLORS),
-    pants: pick(PANTS_COLORS),
-    glasses: Math.random() < 0.18,
-    kid: Math.random() < 0.15,
+export function createCustomer() {
+  const person = createPerson(randomCustomerVariant());
+  person.group.position.set(ENTRY_X, 0, rand(2.3, 3.2));
+  r3d.add(person.group);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'actor-bubble';
+  overlay.appendChild(bubble);
+  gsap.set(bubble, {
+    xPercent: -50,
+    yPercent: -100,
+    scale: 0,
+    transformOrigin: '50% 100%',
+  });
+
+  const actor = {
+    pos: person.group.position,
+    dead: false,
+    _bubbleShown: false,
+    place(x) {
+      person.group.position.x = x;
+    },
+    // dir: -1 = nach links laufen, 1 = nach rechts
+    face(dir) {
+      if (this.dead) return;
+      turnTo(person.group, dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+    },
+    faceTruck() {
+      if (this.dead) return;
+      turnTo(person.group, Math.PI);
+    },
+    setWalking(on) {
+      if (this.dead) return;
+      person.setWalking(on);
+    },
+    showBubble(emoji, autoHideAfter = 0) {
+      if (this.dead) return;
+      bubble.textContent = emoji;
+      this._bubbleShown = true;
+      this._updateBubble();
+      gsap.to(bubble, { scale: 1, duration: 0.25, ease: 'back.out(2)' });
+      if (autoHideAfter > 0) {
+        gsap.to(bubble, {
+          scale: 0,
+          delay: autoHideAfter,
+          duration: 0.15,
+          onComplete: () => (this._bubbleShown = false),
+        });
+      }
+    },
+    hideBubble() {
+      if (this.dead) return;
+      this._bubbleShown = false;
+      gsap.to(bubble, { scale: 0, duration: 0.15, ease: 'back.in(2)' });
+    },
+    // Pixel-x des Aktors im Overlay (für Trinkgeld-Bubbles, tips.js)
+    screenX() {
+      if (this.dead) return 0;
+      const p = person.group.position;
+      return r3d.project({ x: p.x, y: 0, z: p.z }).x;
+    },
+    _updateBubble() {
+      if (this.dead || !this._bubbleShown) return;
+      const p = person.group.position;
+      const px = r3d.project({ x: p.x, y: person.height + 0.15, z: p.z });
+      bubble.style.left = `${px.x}px`;
+      bubble.style.top = `${px.y}px`;
+    },
+    _kill() {
+      this.dead = true;
+      gsap.killTweensOf(bubble);
+      bubble.remove();
+      person.group.parent?.remove(person.group);
+      person.dispose();
+    },
   };
+  actors.add(actor);
+  return actor;
 }
 
-function hairSvg(v) {
-  switch (v.hairStyle) {
-    case 'bald':
-      return '';
-    case 'cap':
-      return `<path d="M17 14 A13 13 0 0 1 43 14 Z" fill="${v.hairColor}"/>
-        <rect x="9" y="11" width="15" height="5" rx="2.5" fill="${v.hairColor}"/>`;
-    case 'long':
-      return `<path d="M17 14 A13 13 0 0 1 43 14 Z" fill="${v.hairColor}"/>
-        <rect x="37" y="12" width="8" height="24" rx="4" fill="${v.hairColor}"/>`;
-    default:
-      return `<path d="M17 13.5 A13 13 0 0 1 43 13.5 Z" fill="${v.hairColor}"/>`;
-  }
-}
-
-function customerSvg(v) {
-  const glasses = v.glasses
-    ? `<circle cx="21" cy="16" r="3.6" fill="none" stroke="#333" stroke-width="1.4"/>
-       <circle cx="29" cy="16" r="3.6" fill="none" stroke="#333" stroke-width="1.4"/>`
-    : '';
-  return `
-<svg class="sprite" viewBox="0 0 60 96" xmlns="http://www.w3.org/2000/svg" aria-label="Kunde">
-  <circle cx="30" cy="16" r="13" fill="${v.skin}"/>
-  ${hairSvg(v)}
-  <circle cx="21" cy="16" r="1.8" fill="#333"/>
-  <circle cx="26" cy="16" r="1.8" fill="#333"/>
-  ${glasses}
-  <rect x="16" y="28" width="28" height="38" rx="10" fill="${v.shirt}"/>
-  <rect x="20" y="64" width="8" height="24" rx="3" fill="${v.pants}"/>
-  <rect x="32" y="64" width="8" height="24" rx="3" fill="${v.pants}"/>
-  <rect x="15" y="85" width="13" height="6" rx="3" fill="#222"/>
-  <rect x="32" y="85" width="13" height="6" rx="3" fill="#222"/>
-</svg>`;
-}
-
-export function createCustomer(orderEmoji) {
-  const el = document.createElement('div');
-  el.className = 'customer';
-  const variant = randomCustomerVariant();
-  if (variant.kid) el.classList.add('kid');
-  el.innerHTML = customerSvg(variant) + `<div class="bubble">${orderEmoji}</div>`;
-  overlay.appendChild(el);
-  gsap.set(el.querySelector('.bubble'), { xPercent: -50, scale: 0 });
-  return el;
-}
-
-export function removeCustomer(el) {
-  el.remove();
+export function removeCustomer(actor) {
+  actors.delete(actor);
+  actor._kill();
 }
 
 // Antippbare Trinkgeld-Bubble (Logik in systems/tips.js).
@@ -239,13 +304,12 @@ export function spawnFloatingText(x, text) {
   });
 }
 
-// Haltepunkt für Kunden: Bodenpunkt vor dem Verkaufsfenster des Trucks,
-// in Overlay-Pixel projiziert.
+// Haltepunkt für Kunden: Bodenpunkt vor dem Verkaufsfenster (Welt-x).
 export function getStandStop(stationId) {
-  const truck = trucks.get(stationId);
-  return r3d.project(truck.getStopPoint()).x;
+  return trucks.get(stationId).getStopPoint().x;
 }
 
+// Einlauf-x der Kunden am rechten Szenenrand (Welt-x).
 export function getEntryX() {
-  return overlay.clientWidth + 60;
+  return ENTRY_X;
 }

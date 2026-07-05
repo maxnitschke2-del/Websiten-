@@ -16,9 +16,9 @@ const MAX_BUBBLES = 5;
 let activeBubbles = 0;
 
 export function initTips() {
-  onCustomerLeaving((customerEl) => {
+  onCustomerLeaving((actor) => {
     if (activeBubbles >= MAX_BUBBLES) return;
-    dropTip(customerEl);
+    dropTip(actor);
   });
 }
 
@@ -26,9 +26,10 @@ function tipAmount() {
   return Math.max(TIP_MIN, Math.round(totalIncomePerSecond() * TIP_INCOME_SECONDS));
 }
 
-function dropTip(customerEl) {
+function dropTip(actor) {
   activeBubbles += 1;
-  const x = gsap.getProperty(customerEl, 'x') + rand(-24, 24);
+  // Bildschirm-x des 3D-Kunden + etwas Streuung
+  const x = actor.screenX() + rand(-24, 24);
   const bubble = createTipBubble(x);
   let collected = false;
 

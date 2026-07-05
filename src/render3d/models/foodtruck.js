@@ -95,8 +95,9 @@ export function createFoodtruck(theme, def) {
   const counter = box(1.9, 0.1, 0.4, theme.counter);
   counter.position.set(0.35, 1.1, 0.92);
 
-  // Markise aus abwechselnd gefärbten Streifen, nach vorn abfallend.
-  // Pivot liegt an der Truck-Kante, damit sie später animierbar ist.
+  // Markise aus abwechselnd gefärbten Streifen, an der Dachkante
+  // aufgehängt. Bewusst kurz und flach geneigt, damit die erhöhte
+  // Diorama-Kamera das Personal im Fenster nicht verdeckt.
   const awning = new THREE.Group();
   const stripeCount = 6;
   const stripeW = 2.0 / stripeCount;
@@ -104,14 +105,14 @@ export function createFoodtruck(theme, def) {
     const stripe = box(
       stripeW,
       0.05,
-      0.95,
+      0.42,
       i % 2 === 0 ? theme.awning : theme.awningAlt
     );
-    stripe.position.set(-1.0 + stripeW / 2 + i * stripeW, 0, 0.475);
+    stripe.position.set(-1.0 + stripeW / 2 + i * stripeW, 0, 0.21);
     awning.add(stripe);
   }
-  awning.position.set(0.35, 2.14, 0.76);
-  awning.rotation.x = 0.5;
+  awning.position.set(0.35, 2.2, 0.76);
+  awning.rotation.x = 0.32;
 
   // Dach-Schild (Textur nur auf der Vorderseite) + Lüfter
   const signGeo = new THREE.BoxGeometry(1.7, 0.62, 0.1);
@@ -175,6 +176,7 @@ export function createFoodtruck(theme, def) {
 
   return {
     group,
+    mount: inner, // hier docken Personal-Figuren an (lokale Truck-Koordinaten)
     awning,
     sign,
     vent: ventCap,

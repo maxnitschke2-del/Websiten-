@@ -1,6 +1,7 @@
-// Kunden-System: lässt Kunden animiert zu einer zufälligen freigeschalteten
+// Kunden-System: lässt 3D-Kunden zu einer zufälligen freigeschalteten
 // Station laufen, kurz warten (bestellen) und wieder rausgehen. Beim
 // Rausgehen feuert der Leaving-Hook (Trinkgeld, systems/tips.js).
+// Bewegung seit Phase 2 in Welt-Koordinaten (Three.js), nicht Pixeln.
 import {
   createCustomer,
   removeCustomer,
@@ -13,7 +14,7 @@ import { currentLocation } from './progression.js';
 import { playSound } from './sound.js';
 import { rand, pick } from '../utils/format.js';
 
-const WALK_SPEED = 110; // Pixel pro Sekunde
+const WALK_SPEED = 2.4; // Welt-Einheiten pro Sekunde
 const SPAWN_DELAY_MIN = 2000;
 const SPAWN_DELAY_MAX = 5000;
 
@@ -53,50 +54,43 @@ function walkDuration(from, to) {
 
 function spawn(stationDef) {
   activeCustomers += 1;
-  const el = createCustomer(stationDef.emoji);
-  const sprite = el.querySelector('.sprite');
-  const bubble = el.querySelector('.bubble');
-  const startX = getEntryX();
-  const stopX = getStandStop(stationDef.id) - el.offsetWidth / 2 + rand(-26, 26);
+  const actor = createCustomer();
+  // Kunden kommen zufällig von links oder rechts
+  const startX = (Math.random() < 0.5 ? 1 : -1) * getEntryX();
+  const stopX = getStandStop(stationDef.id) + rand(-0.7, 0.7);
   const pace = rand(0.85, 1.25); // individuelles Lauftempo
 
-  gsap.set(el, { x: startX });
-  const bob = gsap.to(sprite, {
-    y: -4,
-    duration: 0.16,
-    repeat: -1,
-    yoyo: true,
-    ease: 'sine.inOut',
-  });
+  actor.place(startX);
+  actor.face(stopX > startX ? 1 : -1);
+  actor.setWalking(true);
 
   const tl = gsap.timeline({
     onComplete() {
-      bob.kill();
-      removeCustomer(el);
+      removeCustomer(actor);
       activeCustomers -= 1;
     },
   });
 
-  tl.to(el, { x: stopX, duration: walkDuration(startX, stopX) / pace, ease: 'none' })
-    // Am Stand: stehen bleiben und Bestellung zeigen
+  tl.to(actor.pos, { x: stopX, duration: walkDuration(startX, stopX) / pace, ease: 'none' })
+    // Am Truck: stehen bleiben, zum Fenster drehen, Bestellung zeigen
     .call(() => {
-      bob.pause(0);
+      actor.setWalking(false);
+      actor.faceTruck();
       playSound('order');
+      actor.showBubble(stationDef.emoji);
     })
-    .to(bubble, { scale: 1, duration: 0.25, ease: 'back.out(2)' })
     .to({}, { duration: rand(1.6, 3.2) })
-    .to(bubble, { scale: 0, duration: 0.15, ease: 'back.in(2)' })
+    .call(() => actor.hideBubble())
+    .to({}, { duration: 0.2 })
     // Umdrehen und rausgehen
     .call(() => {
-      if (leavingHook) leavingHook(el);
-      gsap.set(sprite, { scaleX: -1 });
-      bob.play();
+      if (leavingHook) leavingHook(actor);
+      actor.face(startX > stopX ? 1 : -1);
+      actor.setWalking(true);
       // manche Kunden zeigen beim Gehen, dass es geschmeckt hat
       if (Math.random() < 0.45) {
-        bubble.textContent = pick(['😋', '❤️', '👍']);
-        gsap.to(bubble, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
-        gsap.to(bubble, { scale: 0, delay: 1.1, duration: 0.15 });
+        actor.showBubble(pick(['😋', '❤️', '👍']), 1.1);
       }
     })
-    .to(el, { x: startX, duration: walkDuration(stopX, startX) / pace, ease: 'none' });
+    .to(actor.pos, { x: startX, duration: walkDuration(stopX, startX) / pace, ease: 'none' });
 }

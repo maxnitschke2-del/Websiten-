@@ -2,8 +2,11 @@
 
 Rein statische Site (HTML + ES-Module + vendored GSAP + vendored Three.js
 über Importmap), kein Build-Schritt. Die Szene ist ein Three.js-Canvas
-(`#scene canvas`); Kunden/Trinkgeld-Bubbles sind DOM-Sprites im Overlay
-`.scene-overlay` darüber.
+(`#scene canvas`); Kunden und Personal sind 3D-Figuren (nur im Canvas
+sichtbar, nicht per DOM abfragbar). Im Overlay `.scene-overlay` liegen
+nur noch: Bestell-Sprechblasen (`.actor-bubble`), Trinkgeld-Bubbles
+(`.tip-bubble`), Schwebe-Texte (`.float-text`) und Schloss-Badges
+(`.lock-badge`).
 
 ## Starten
 
@@ -35,9 +38,9 @@ das echte Binary liegt unter `chromium-<rev>/chrome-linux/chrome`.
 ## Sinnvolle Flows
 
 - Seite laden, `console`/`pageerror` sammeln (müssen leer sein).
-- `.customer` erscheint nach ~1,2 s, läuft von rechts zum Stand, Bubble
-  (`.customer .bubble`, Scale 0→1) erscheint, Kunde verschwindet wieder
-  (Element wird entfernt) → gesamter GSAP-Zyklus.
+- Kunden-Zyklus: 3D-Kunde spawnt nach ~1,2 s und läuft zum Truck (im DOM
+  unsichtbar). Prüfbar: `.actor-bubble` bekommt das Bestell-Emoji und
+  Breite > 0, verschwindet wieder; danach `.tip-bubble` (klickbar).
 - `#hud-money-value` steigt über die Zeit (passives Einkommen).
 - `.upgrade-btn` wird bei genug Geld aktiv; Klick erhöht Level in
   `.station-meta` und zieht Kosten ab.

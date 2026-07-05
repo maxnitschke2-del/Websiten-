@@ -168,23 +168,13 @@ body {
   pointer-events: none;
 }
 
-.customer {
+/* Sprechblase über den Köpfen der 3D-Kunden; left/top folgt der
+   projizierten Kopf-Position, Zentrierung + Scale macht GSAP. */
+.actor-bubble {
   position: absolute;
   left: 0;
-  bottom: 14%;
-  width: clamp(38px, 8%, 64px);
+  top: 0;
   z-index: 3;
-  will-change: transform;
-}
-
-.customer.kid { width: clamp(28px, 5.5%, 46px); }
-
-.customer .sprite { display: block; width: 100%; height: auto; }
-
-.customer .bubble {
-  position: absolute;
-  left: 50%;
-  bottom: 102%;
   background: #fff;
   color: #222;
   border-radius: 12px;
@@ -192,9 +182,10 @@ body {
   font-size: clamp(14px, 2.6vw, 20px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+  pointer-events: none;
 }
 
-.customer .bubble::after {
+.actor-bubble::after {
   content: "";
   position: absolute;
   top: 100%;
