@@ -27,7 +27,34 @@ function box(w, h, d, color) {
   return m;
 }
 
+// Kaktus (Wüsten-Welten): Säule mit zwei Armen, alles Zylinder.
+function cactus(rng, env) {
+  const g = new THREE.Group();
+  const color = rng() < 0.5 ? env.foliage : env.foliageDark;
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.26, 1.7, 8),
+    mat(color)
+  );
+  body.castShadow = true;
+  body.position.y = 0.85;
+  g.add(body);
+  for (const side of [-1, 1]) {
+    if (rng() < 0.75) {
+      const arm = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.13, 0.7, 7),
+        mat(color)
+      );
+      arm.castShadow = true;
+      arm.position.set(side * 0.38, 0.9 + rng() * 0.4, 0);
+      arm.rotation.z = side * -0.5;
+      g.add(arm);
+    }
+  }
+  return g;
+}
+
 function tree(rng, env) {
+  if (env.cactus && rng() < 0.7) return cactus(rng, env);
   const g = new THREE.Group();
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.09, 0.14, 0.7, 7),
@@ -36,7 +63,7 @@ function tree(rng, env) {
   trunk.castShadow = true;
   trunk.position.y = 0.35;
   g.add(trunk);
-  if (rng() < 0.35) {
+  if (rng() < (env.coneChance ?? 0.35)) {
     // Zypresse: schlanker Kegel
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(0.5, 2.4, 8),

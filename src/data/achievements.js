@@ -13,4 +13,5 @@ export const ACHIEVEMENTS = [
   { id: 'city-4', emoji: '🏖️', name: 'Strandläufer', desc: 'Erreiche die Strandpromenade', check: (c) => c.locationIndex >= 3 },
   { id: 'master', emoji: '👑', name: 'Foodtruck-Imperium', desc: 'Meistere alle Städte', check: (c) => c.mastered },
   { id: 'world-2', emoji: '🌸', name: 'Weltenbummler', desc: 'Schalte eine zweite Welt frei', check: (c) => c.worldsUnlocked >= 2 },
+  { id: 'all-worlds', emoji: '🌍', name: 'Weltreisender', desc: 'Schalte alle Welten frei', check: (c) => c.worldsUnlocked >= 4 },
 ];

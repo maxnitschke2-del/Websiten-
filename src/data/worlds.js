@@ -5,7 +5,7 @@
 //
 // Freischaltung der nächsten Welt: hohe Kostenkurve, bezahlt mit dem
 // Geld der gerade aktiven Welt (systems/worlds.js).
-export const TOTAL_WORLDS = 4; // Endausbau; Welt 3+4 folgen in Phase 4
+export const TOTAL_WORLDS = 4;
 
 export const WORLDS = [
   {
@@ -161,6 +161,164 @@ export const WORLDS = [
         truck: {
           body: '#6f9940', bodyDark: '#5b7f33', cabin: '#f2f4ec',
           awning: '#6f9940', awningAlt: '#f6f2ea', counter: '#7a5a41',
+        },
+      },
+    ],
+  },
+  {
+    id: 'mesa',
+    name: 'Rote Mesa',
+    tagline: 'Wüstenstadt in den Canyons',
+    signature: { dish: 'Street-Tacos', emoji: '🌮' },
+    unlockCost: 2_000_000_000,
+    env: {
+      road: '#6b5a4a',
+      roadLine: '#f0e6d2',
+      roof: '#a8503c',
+      foliage: '#7fa06a',
+      foliageDark: '#5d8050',
+      trunk: '#7a5a3a',
+      cloud: '#fdf6e9',
+      building: '#c98d5f',
+      cactus: true, // Wüsten-Vegetation statt Laubbäumen
+    },
+    customers: {
+      shirts: ['#c2563a', '#8a6bb8', '#3a8a7a', '#d9a441', '#a8503c', '#5d8050'],
+    },
+    stations: [
+      {
+        id: 'taco',
+        name: 'Taco-Truck',
+        emoji: '🌮',
+        sign: 'TACOS',
+        baseIncome: 3000,
+        baseCost: 28_000,
+        costGrowth: 1.15,
+        unlockCost: 0,
+        truck: {
+          body: '#d97f3e', bodyDark: '#b96628', cabin: '#f4e8d4',
+          awning: '#d97f3e', awningAlt: '#f4e8d4', counter: '#7a5a3a',
+        },
+      },
+      {
+        id: 'burrito',
+        name: 'Burrito-Grill',
+        emoji: '🌯',
+        sign: 'BURRITO',
+        baseIncome: 12_000,
+        baseCost: 165_000,
+        costGrowth: 1.15,
+        unlockCost: 450_000,
+        truck: {
+          body: '#b34a3a', bodyDark: '#963a2c', cabin: '#f4e8d4',
+          awning: '#b34a3a', awningAlt: '#f4e8d4', counter: '#7a5a3a',
+        },
+      },
+      {
+        id: 'elote',
+        name: 'Elote-Stand',
+        emoji: '🌽',
+        sign: 'ELOTE',
+        baseIncome: 36_000,
+        baseCost: 550_000,
+        costGrowth: 1.15,
+        unlockCost: 1_800_000,
+        truck: {
+          body: '#d9b23e', bodyDark: '#bd9829', cabin: '#f4e8d4',
+          awning: '#5d8050', awningAlt: '#f4e8d4', counter: '#7a5a3a',
+        },
+      },
+      {
+        id: 'agua',
+        name: 'Agua-Fresca-Bar',
+        emoji: '🍹',
+        sign: 'AGUA',
+        baseIncome: 96_000,
+        baseCost: 1_500_000,
+        costGrowth: 1.15,
+        unlockCost: 7_000_000,
+        truck: {
+          body: '#4a9c8c', bodyDark: '#3a8274', cabin: '#f4e8d4',
+          awning: '#4a9c8c', awningAlt: '#f4e8d4', counter: '#7a5a3a',
+        },
+      },
+    ],
+  },
+  {
+    id: 'fjordlicht',
+    name: 'Fjordlicht',
+    tagline: 'Nordisches Hafendorf',
+    signature: { dish: 'Lachs-Brötchen', emoji: '🐟' },
+    unlockCost: 150_000_000_000,
+    env: {
+      road: '#4a4f58',
+      roadLine: '#e8ecef',
+      roof: '#3e4a56',
+      foliage: '#3f6b4f',
+      foliageDark: '#2e523c',
+      trunk: '#5a4632',
+      cloud: '#f0f4f8',
+      building: '#994a3f',
+      coneChance: 0.8, // überwiegend Nadelbäume
+    },
+    customers: {
+      shirts: ['#3e6e8e', '#8a4a3f', '#4a6b52', '#c2803a', '#5a5f6b', '#9c7a9a'],
+    },
+    stations: [
+      {
+        id: 'fisch',
+        name: 'Fisch-Kutter',
+        emoji: '🐟',
+        sign: 'FISCH',
+        baseIncome: 160_000,
+        baseCost: 1_500_000,
+        costGrowth: 1.15,
+        unlockCost: 0,
+        truck: {
+          body: '#3e6e8e', bodyDark: '#325a75', cabin: '#e8ecef',
+          awning: '#3e6e8e', awningAlt: '#eef2f4', counter: '#5a4632',
+        },
+      },
+      {
+        id: 'waffeln',
+        name: 'Waffel-Hütte',
+        emoji: '🧇',
+        sign: 'WAFFELN',
+        baseIncome: 640_000,
+        baseCost: 9_000_000,
+        costGrowth: 1.15,
+        unlockCost: 24_000_000,
+        truck: {
+          body: '#d9a441', bodyDark: '#bd8a2c', cabin: '#f4ede1',
+          awning: '#d9a441', awningAlt: '#f4ede1', counter: '#5a4632',
+        },
+      },
+      {
+        id: 'eintopf',
+        name: 'Eintopf-Kombüse',
+        emoji: '🍲',
+        sign: 'EINTOPF',
+        baseIncome: 1_920_000,
+        baseCost: 30_000_000,
+        costGrowth: 1.15,
+        unlockCost: 95_000_000,
+        truck: {
+          body: '#5d7a52', bodyDark: '#4a6341', cabin: '#eef2ec',
+          awning: '#5d7a52', awningAlt: '#eef2ec', counter: '#5a4632',
+        },
+      },
+      {
+        id: 'kakao',
+        name: 'Kakao-Bude',
+        emoji: '☕',
+        sign: 'KAKAO',
+        baseIncome: 5_100_000,
+        baseCost: 80_000_000,
+        costGrowth: 1.15,
+        unlockCost: 380_000_000,
+        truck: {
+          body: '#8a5a4a', bodyDark: '#71483a', cabin: '#f4ede1',
+          awning: '#8a5a4a', awningAlt: '#f4ede1', counter: '#5a4632',
         },
       },
     ],
