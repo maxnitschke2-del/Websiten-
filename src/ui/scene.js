@@ -1,6 +1,7 @@
 // Baut die 2D-Restaurant-Szene: Kulisse, Stände mit Personal-Sprites,
 // und liefert Fabriken + Laufpositionen für Kunden-Sprites.
 import { STATIONS } from '../data/stations.js';
+import { getLocation } from '../data/locations.js';
 import { state } from '../core/state.js';
 
 let scene;
@@ -99,8 +100,19 @@ function customerSvg(shirt) {
 </svg>`;
 }
 
+// Standort-Optik: Theme-Farben als CSS-Variablen auf die Szene legen.
+function applyLocationTheme() {
+  const theme = getLocation(state.locationIndex).theme;
+  scene.style.setProperty('--sky-top', theme.skyTop);
+  scene.style.setProperty('--sky-bottom', theme.skyBottom);
+  scene.style.setProperty('--ground', theme.ground);
+  scene.style.setProperty('--ground-dark', theme.groundDark);
+  scene.style.setProperty('--building', theme.building);
+}
+
 export function buildScene(root) {
   scene = root;
+  applyLocationTheme();
   const stands = STATIONS.map((def, i) => {
     const locked = state.stations[def.id].level === 0;
     return `

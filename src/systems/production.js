@@ -1,11 +1,12 @@
 // Passives Idle-Einkommen aus allen Stationen.
 // Trinkgelder (Phase 2) laufen bewusst getrennt in systems/tips.js.
 import { state } from '../core/state.js';
-import { STATIONS, incomePerSecond } from '../data/stations.js';
+import { STATIONS } from '../data/stations.js';
+import { stationIncome } from './progression.js';
 
 export function totalIncomePerSecond() {
   return STATIONS.reduce(
-    (sum, def) => sum + incomePerSecond(def, state.stations[def.id].level),
+    (sum, def) => sum + stationIncome(def, state.stations[def.id].level),
     0
   );
 }

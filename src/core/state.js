@@ -28,6 +28,14 @@ export function loadState() {
   ensureStations();
 }
 
+// Umzug in eine neue Stadt: Geld und Stationen zurücksetzen,
+// locationIndex und tipsCollected bleiben erhalten.
+export function resetForNewLocation() {
+  state.money = 0;
+  state.stations = {};
+  ensureStations();
+}
+
 export function saveState() {
   state.lastSeen = Date.now();
   try {

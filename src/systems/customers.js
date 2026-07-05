@@ -9,12 +9,12 @@ import {
 } from '../ui/scene.js';
 import { STATIONS } from '../data/stations.js';
 import { state } from '../core/state.js';
+import { currentLocation } from './progression.js';
 import { rand } from '../utils/format.js';
 
 const WALK_SPEED = 110; // Pixel pro Sekunde
 const SPAWN_DELAY_MIN = 2000;
 const SPAWN_DELAY_MAX = 5000;
-const MAX_CUSTOMERS = 3;
 
 let leavingHook = null;
 let activeCustomers = 0;
@@ -35,10 +35,12 @@ function unlockedStations() {
   return STATIONS.filter((def) => state.stations[def.id].level > 0);
 }
 
-// Pro freigeschalteter Station darf ein Kunde gleichzeitig da sein.
+// Kapazität wächst mit dem Standort (maxCustomers), begrenzt auf
+// maximal zwei Kunden je freigeschalteter Station.
 function tickSpawn() {
   const targets = unlockedStations();
-  if (activeCustomers < Math.min(targets.length, MAX_CUSTOMERS)) {
+  const capacity = Math.min(targets.length * 2, currentLocation().maxCustomers);
+  if (activeCustomers < capacity) {
     spawn(targets[Math.floor(Math.random() * targets.length)]);
   }
   schedule();
@@ -54,7 +56,7 @@ function spawn(stationDef) {
   const sprite = el.querySelector('.sprite');
   const bubble = el.querySelector('.bubble');
   const startX = getEntryX();
-  const stopX = getStandStop(stationDef.id) - el.offsetWidth / 2 + rand(-14, 14);
+  const stopX = getStandStop(stationDef.id) - el.offsetWidth / 2 + rand(-26, 26);
 
   gsap.set(el, { x: startX });
   const bob = gsap.to(sprite, {
