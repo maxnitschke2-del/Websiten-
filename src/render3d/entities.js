@@ -368,7 +368,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
 
   // ---------- Kunden-Spawn-Takt ----------
   let spawnAcc = 0;
-  const MAX_CUSTOMERS = 6;
+  const MAX_CUSTOMERS = 9;
 
   function update(dt) {
     spawnAcc += dt;

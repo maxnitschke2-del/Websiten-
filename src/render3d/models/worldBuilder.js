@@ -15,8 +15,9 @@ export const CUSTOMER_DZ = 1.35;
 export const SIDEWALK_Z = STATION_Z + CUSTOMER_DZ;
 export const STREET_Z = 4.2;
 
-// Sitzbereich im Vordergrund (Kamera-Seite, hinter der Straße).
-export const TABLE_Z = 5.9;
+// Sitzbereich auf der Grünfläche (Kamera-Seite, klar hinter der Straße;
+// Straße endet bei z≈6.0, die Tische stehen also auf dem Rasen).
+export const TABLE_Z = 6.9;
 export const SEAT_DZ = 0.6; // Kunde sitzt kameraseitig am Tisch
 export const SERVE_DZ = -0.75; // Kellner bedient von der Truck-Seite
 
@@ -75,10 +76,12 @@ export function buildWorld(scene, worldCfg, stationCfgs, worldStationState, worl
 
   scene.add(group);
 
-  // Kamera-Rahmen: Truck + alle Stationen + der Sitzbereich im Vordergrund.
+  // Kamera-Rahmen: Truck + alle Stationen + der komplette Sitzbereich.
+  // Vordere Grenze aus dem am weitesten vorn liegenden Sitzplatz ableiten.
+  const maxSeatZ = Math.max(...tableLayout.map((t) => t.seatZ));
   const frameBounds = new THREE.Box3(
     new THREE.Vector3(-(count / 2) * STATION_SPACING - 1.4, 0, TRUCK_Z - 1.6),
-    new THREE.Vector3((count / 2) * STATION_SPACING + 1.4, 3.6, TABLE_Z + 1.2)
+    new THREE.Vector3((count / 2) * STATION_SPACING + 1.4, 3.6, maxSeatZ + 0.6)
   );
 
   return { group, stationMeshes, stationLayout, tableLayout, frameBounds };
@@ -214,15 +217,24 @@ export function buildCounter(palette) {
   return station;
 }
 
-// Sitzbereich: 3 kleine Tische mit Stuhl im Vordergrund. Liefert die Anker
-// (Kunden-Sitzplatz, Kellner-Serveplatz, Tischmitte) fürs Entity-System.
+// Sitzbereich: 5 kleine Tische mit Stuhl, leicht gestaffelt auf der
+// Grünfläche vor der Straße. Liefert die Anker (Sitzplatz, Serveplatz,
+// Tischmitte) fürs Entity-System.
 function buildTables(group, palette, stationCount) {
   const halfW = (stationCount / 2) * STATION_SPACING;
-  const xs = [-halfW * 0.62, 0, halfW * 0.62];
+  // hintere Reihe direkt am Grasrand, vordere Reihe versetzt weiter vorn
+  const spots = [
+    { x: -halfW * 0.66, dz: 0 },
+    { x: 0, dz: 0 },
+    { x: halfW * 0.66, dz: 0 },
+    { x: -halfW * 0.34, dz: 1.2 },
+    { x: halfW * 0.34, dz: 1.2 }
+  ];
   const layout = [];
 
-  xs.forEach((x, i) => {
+  spots.forEach((spot, i) => {
     const table = new THREE.Group();
+    const z = TABLE_Z + spot.dz;
 
     const leg = cylinder(0.1, 0.13, 0.85, 0x8a6d4f, 10);
     leg.position.y = 0.42;
@@ -232,26 +244,25 @@ function buildTables(group, palette, stationCount) {
     table.add(top);
 
     // Stuhl auf der Kamera-Seite (Kunde sitzt mit Blick zum Tisch)
-    const seatZ = SEAT_DZ;
     const chairSeat = box(0.5, 0.08, 0.5, palette.accent);
-    chairSeat.position.set(0, 0.5, seatZ);
+    chairSeat.position.set(0, 0.5, SEAT_DZ);
     table.add(chairSeat);
     const chairLeg = cylinder(0.07, 0.08, 0.5, 0x6d4c33, 8);
-    chairLeg.position.set(0, 0.25, seatZ);
+    chairLeg.position.set(0, 0.25, SEAT_DZ);
     table.add(chairLeg);
     const chairBack = box(0.5, 0.5, 0.08, palette.accent);
-    chairBack.position.set(0, 0.75, seatZ + 0.24);
+    chairBack.position.set(0, 0.75, SEAT_DZ + 0.24);
     table.add(chairBack);
 
-    table.position.set(x, 0, TABLE_Z);
+    table.position.set(spot.x, 0, z);
     group.add(table);
 
     layout.push({
       index: i,
-      x,
-      z: TABLE_Z,
-      seatZ: TABLE_Z + SEAT_DZ,
-      serveZ: TABLE_Z + SERVE_DZ
+      x: spot.x,
+      z,
+      seatZ: z + SEAT_DZ,
+      serveZ: z + SERVE_DZ
     });
   });
 
