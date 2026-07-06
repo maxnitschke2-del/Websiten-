@@ -30,7 +30,7 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
       <button class="buy"></button>
     `;
     const buy = card.querySelector('.buy');
-    buy.addEventListener('click', () => actions.upgrade(cfg.id));
+    buy.addEventListener('click', () => actions.buy(cfg.id));
     el.list.appendChild(card);
     cards[cfg.id] = {
       root: card,
@@ -56,30 +56,24 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
     const income = worldIncomePerSec(stationCfgs, worldState);
     setText(el.income, topCache, 'income', `+${formatNumber(income)}/s`);
 
-    // Nächstes Ziel immer sichtbar: nächster Meilenstein der ersten
-    // ausbaubaren Station (ab Phase 7 übernehmen Achievements diese Rolle).
-    const goalCfg = stationCfgs[0];
-    const goalState = worldState.stations[goalCfg.id];
-    const goalLvl = nextMilestoneLevel(goalState.level);
-    setText(
-      el.goal,
-      topCache,
-      'goal',
-      goalState.level >= goalCfg.levelCap
-        ? `🎯 ${goalCfg.name} ist ausgebaut!`
-        : `🎯 ${goalCfg.name} Lv ${goalLvl} → ×2 Produktion`
-    );
+    // Nächstes Ziel immer sichtbar: erst die nächste gesperrte Station,
+    // danach der nächste Meilenstein der schwächsten Station.
+    // (Ab Phase 7 übernehmen Achievements diese Rolle.)
+    setText(el.goal, topCache, 'goal', nextGoalText(worldState));
 
     for (const cfg of stationCfgs) {
       const st = worldState.stations[cfg.id];
       const card = cards[cfg.id];
 
       if (!st.unlocked) {
-        // Freischalten kommt in Phase 2 – Ziel trotzdem sichtbar machen.
         card.root.classList.add('locked');
         setText(card.lvl, card.cache, 'lvl', '🔒');
-        setText(card.buy, card.cache, 'buy', formatMoney(cfg.unlockCost));
-        card.buy.disabled = true;
+        setText(card.buy, card.cache, 'buy', `🔓 ${formatMoney(cfg.unlockCost)}`);
+        const affordable = state.money >= cfg.unlockCost;
+        if (card.cache.affordable !== affordable) {
+          card.cache.affordable = affordable;
+          card.buy.disabled = !affordable;
+        }
         continue;
       }
 
@@ -100,6 +94,22 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
         }
       }
     }
+  }
+
+  function nextGoalText(worldState) {
+    const locked = stationCfgs.find((c) => !worldState.stations[c.id].unlocked);
+    if (locked) {
+      return `🎯 ${locked.name} freischalten (${formatMoney(locked.unlockCost)})`;
+    }
+    let weakest = null;
+    for (const cfg of stationCfgs) {
+      const lvl = worldState.stations[cfg.id].level;
+      if (lvl >= cfg.levelCap) continue;
+      if (!weakest || lvl < worldState.stations[weakest.id].level) weakest = cfg;
+    }
+    if (!weakest) return '🎯 Welt komplett ausgebaut!';
+    const lvl = worldState.stations[weakest.id].level;
+    return `🎯 ${weakest.name} Lv ${nextMilestoneLevel(lvl)} → ×2 Produktion`;
   }
 
   function flashCard(id) {

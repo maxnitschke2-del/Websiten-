@@ -1,6 +1,11 @@
 // Reine Konfiguration – keine Logik.
 // Welt-Themen sind Platzhalter, bis die finale Ausfüll-Liste vorliegt.
-// unlockCost der Welten 2-4 wird in Phase 5/6 nach Balancing-Regel finalisiert.
+//
+// unlockCost nach Balancing-Regel: Welt komplett maxen ≈ 30-50% der
+// Freischalt-Kosten der NÄCHSTEN Welt. Welt 1 maxen kostet ~100M
+// (Simulation, Phase 2) → Welt 2 = 250M ergibt 39.9%.
+// Welt 3/4 sind Schätzwerte und werden in Phase 5/6 gegen die dann
+// definierten Stationsdaten gegengerechnet.
 export const WORLDS = [
   {
     id: 'w1',
@@ -26,7 +31,7 @@ export const WORLDS = [
     index: 2,
     name: 'Taco Fiesta',
     signature: 'Street Taco Deluxe',
-    unlockCost: 250000,
+    unlockCost: 250e6,
     palette: {
       sky: 0xffe0b2,
       ground: 0xe0b97d,
@@ -45,7 +50,7 @@ export const WORLDS = [
     index: 3,
     name: 'Sushi Harbor',
     signature: 'Dragon Roll',
-    unlockCost: 12000000,
+    unlockCost: 400e9,
     palette: {
       sky: 0xb3e5fc,
       ground: 0x90a4ae,
@@ -64,7 +69,7 @@ export const WORLDS = [
     index: 4,
     name: 'Sweet Dreams',
     signature: 'Rainbow Sundae',
-    unlockCost: 600000000,
+    unlockCost: 640e12,
     palette: {
       sky: 0xf8bbd0,
       ground: 0xf3d9e5,
