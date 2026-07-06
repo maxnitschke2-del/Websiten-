@@ -51,6 +51,32 @@ body {
   font-weight: 700;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+}
+
+.icon-btn.muted {
+  opacity: 0.55;
+}
+
 #money {
   display: inline-block;
   transform-origin: left center;
@@ -318,4 +344,124 @@ body {
 
 .modal-btn:active {
   transform: scale(0.97);
+}
+
+.modal-btn.ghost {
+  background: transparent;
+  color: var(--accent-dark);
+  border: 2px solid var(--accent);
+  margin-bottom: 8px;
+}
+
+/* ---------- Achievement-Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 88vw;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #2b2118;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toast-icon {
+  font-size: 1.4rem;
+}
+
+.toast-text {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.toast-text b {
+  color: #ffd23f;
+}
+
+/* ---------- Achievements-Modal ---------- */
+.ach-card {
+  max-width: 360px;
+  text-align: left;
+}
+
+.ach-card h2 {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ach-count {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  background: #f1e8da;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.ach-list {
+  max-height: 52vh;
+  overflow-y: auto;
+  margin: 12px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7f1e8;
+  opacity: 0.7;
+}
+
+.ach-row.done {
+  opacity: 1;
+  background: #eafaea;
+}
+
+.ach-icon {
+  font-size: 1.5rem;
+  flex: 0 0 auto;
+}
+
+.ach-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ach-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ach-desc {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+
+.ach-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: #e0d5c2;
+  overflow: hidden;
+}
+
+.ach-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.3s ease;
 }

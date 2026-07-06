@@ -1,5 +1,5 @@
+import * as THREE from 'three';
 import { gsap } from 'gsap';
-import { WORLDS } from './data/worlds.js';
 import { STATIONS } from './data/stations.js';
 import { createInitialState } from './core/gameState.js';
 import { startLoop } from './core/gameLoop.js';
@@ -7,6 +7,9 @@ import { saveGame, loadGame } from './core/save.js';
 import { tickProduction, worldIncomePerSec } from './systems/production.js';
 import { upgradeCost } from './systems/costScaling.js';
 import { worldCfgById } from './systems/worldUnlock.js';
+import { collectNewlyUnlocked, evaluateAchievements } from './systems/achievements.js';
+import { createSound } from './systems/sound.js';
+import { createMonetizationService } from './systems/monetization.js';
 import { createScene } from './render3d/scene.js';
 import {
   buildWorld,
@@ -15,8 +18,13 @@ import {
 } from './render3d/models/worldBuilder.js';
 import { WORLD_MODELS } from './render3d/models/registry.js';
 import { createEntitySystem } from './render3d/entities.js';
+import { createParticleSystem } from './render3d/particles.js';
 import { createUI } from './ui/render.js';
-import { showOfflineModal } from './ui/overlay.js';
+import {
+  showOfflineModal,
+  showAchievementToast,
+  showAchievementsModal
+} from './ui/overlay.js';
 
 // Gespeicherten Stand laden (inkl. Offline-Progress) oder frisch starten.
 const loaded = loadGame();
@@ -24,6 +32,9 @@ const state = loaded ? loaded.state : createInitialState();
 
 const container = document.getElementById('scene-container');
 const scene3d = createScene(container, worldCfgById(state.currentWorld).palette);
+const particles = createParticleSystem(scene3d.scene);
+const sound = createSound(() => state.muted);
+const monetization = createMonetizationService();
 
 const ui = createUI(state, { buy, switchWorld, unlockWorld });
 
@@ -60,8 +71,7 @@ function activateWorld(worldId) {
     {
       worldGroup: world3d.group,
       isUnlocked: (id) => state.worlds[worldId].stations[id].unlocked,
-      getIncomePerSec: () =>
-        worldIncomePerSec(stationCfgs, state.worlds[worldId]),
+      getIncomePerSec: () => worldIncomePerSec(stationCfgs, state.worlds[worldId]),
       onTip: collectTip
     }
   );
@@ -73,9 +83,21 @@ function activateWorld(worldId) {
   ui.setWorld(worldId);
 }
 
-function collectTip(amount) {
+function collectTip(amount, worldPos) {
   state.money += amount;
+  state.stats.totalEarned += amount;
+  state.stats.tipsCollected += 1;
   ui.pulseMoney();
+  sound.play('tip');
+  if (worldPos) particles.burst(worldPos, { color: 0xffd23f, count: 8, size: 0.7 });
+}
+
+// Weltposition (oben) einer Station für Partikel-Bursts.
+function stationTop(stationId) {
+  const mesh = active.world3d.stationMeshes[stationId];
+  const p = mesh.getWorldPosition(new THREE.Vector3());
+  p.y += 1.4;
+  return p;
 }
 
 // Station kaufen/freischalten in der AKTIVEN Welt.
@@ -99,6 +121,9 @@ function buy(stationId) {
     active.entities.addWorker(stationId);
     ui.flashCard(stationId);
     popStationMesh(mesh);
+    sound.play('unlock');
+    particles.burst(stationTop(stationId), { color: active.worldCfg.palette.accent, count: 16, power: 1.8 });
+    checkAchievements();
     return;
   }
 
@@ -110,6 +135,9 @@ function buy(stationId) {
   st.level += 1;
   ui.flashCard(stationId);
   popStationMesh(active.world3d.stationMeshes[stationId]);
+  sound.play('buy');
+  particles.burst(stationTop(stationId), { color: 0x9be09e, count: 6, size: 0.7 });
+  checkAchievements();
 }
 
 // Zwischen bereits freigeschalteten Welten wechseln (kostenlos).
@@ -124,8 +152,11 @@ function unlockWorld(worldCfg) {
   if (state.money < worldCfg.unlockCost) return;
   state.money -= worldCfg.unlockCost;
   state.worlds[worldCfg.id].unlocked = true;
-  saveGame(state); // Freischaltung sofort sichern
+  saveGame(state);
   activateWorld(worldCfg.id);
+  sound.play('world');
+  particles.burst(new THREE.Vector3(0, 3, 0), { color: worldCfg.palette.accent, count: 30, power: 2.4, size: 1.2 });
+  checkAchievements();
 }
 
 function popStationMesh(mesh) {
@@ -138,18 +169,59 @@ function popStationMesh(mesh) {
   );
 }
 
+// Neu erreichte Achievements: Toast + Sound.
+function checkAchievements() {
+  const newly = collectNewlyUnlocked(state);
+  for (const ach of newly) {
+    showAchievementToast(ach);
+    sound.play('achievement');
+  }
+}
+
+// ---------- Topbar-Buttons ----------
+const btnAch = document.getElementById('btn-achievements');
+const btnMute = document.getElementById('btn-mute');
+
+btnAch.addEventListener('click', () => {
+  sound.unlock();
+  showAchievementsModal(evaluateAchievements(state));
+});
+
+function refreshMuteIcon() {
+  btnMute.textContent = state.muted ? '🔈' : '🔊';
+  btnMute.classList.toggle('muted', state.muted);
+}
+btnMute.addEventListener('click', () => {
+  state.muted = !state.muted;
+  refreshMuteIcon();
+  if (!state.muted) sound.play('buy');
+  persist();
+});
+refreshMuteIcon();
+
 // Startwelt aufbauen.
 activateWorld(state.currentWorld);
 
-// Offline-Ertrag gutschreiben und "Willkommen zurück" zeigen.
+// Offline-Ertrag gutschreiben, "Willkommen zurück" zeigen – inkl. Verdopplung
+// per (gestubbter) Rewarded Ad über den MonetizationService.
 if (loaded && loaded.offline) {
   state.money += loaded.offline.earned;
-  showOfflineModal(loaded.offline);
+  state.stats.totalEarned += loaded.offline.earned;
+  showOfflineModal(loaded.offline, {
+    onDouble: (earned, confirm) => {
+      monetization.showRewardedAd(() => {
+        state.money += earned; // Belohnung: nochmal denselben Betrag = verdoppelt
+        state.stats.totalEarned += earned;
+        confirm();
+      });
+    }
+  });
 }
 
 // Auto-Save: regelmäßig sowie beim Verlassen/Tab-Wechsel.
 const AUTOSAVE_INTERVAL = 10;
 let saveAcc = 0;
+let achAcc = 0;
 
 function persist() {
   saveGame(state);
@@ -167,6 +239,14 @@ startLoop(
   (dt) => {
     tickProduction(state, active.stationCfgs, dt);
     active.entities.update(dt);
+
+    // Meilenstein-/Verdienst-Achievements periodisch prüfen (nicht jeden Frame).
+    achAcc += dt;
+    if (achAcc >= 1) {
+      achAcc = 0;
+      checkAchievements();
+    }
+
     saveAcc += dt;
     if (saveAcc >= AUTOSAVE_INTERVAL) {
       saveAcc = 0;

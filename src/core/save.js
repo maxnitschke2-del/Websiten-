@@ -75,6 +75,21 @@ function mergeState(saved) {
       if (st.unlocked && st.level < 1) st.level = 1;
     }
   }
+
+  // Statistiken, Achievements und Einstellungen übernehmen (defensiv).
+  if (saved.stats) {
+    if (Number.isFinite(saved.stats.totalEarned)) {
+      fresh.stats.totalEarned = Math.max(0, saved.stats.totalEarned);
+    }
+    if (Number.isFinite(saved.stats.tipsCollected)) {
+      fresh.stats.tipsCollected = Math.max(0, Math.floor(saved.stats.tipsCollected));
+    }
+  }
+  if (Array.isArray(saved.achievements)) {
+    fresh.achievements = saved.achievements.filter((id) => typeof id === 'string');
+  }
+  fresh.muted = !!saved.muted;
+
   return fresh;
 }
 

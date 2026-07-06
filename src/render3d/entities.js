@@ -206,7 +206,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     if (hits.length > 0) {
       const coin = hits[0].object;
       if (coin.userData.alive) {
-        hooks.onTip(coin.userData.value);
+        hooks.onTip(coin.userData.value, coin.getWorldPosition(new THREE.Vector3()));
         removeCoin(coin, true);
       }
     }

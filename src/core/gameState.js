@@ -24,7 +24,14 @@ export function createInitialState() {
   return {
     money: 0,
     currentWorld: 'w1',
-    worlds
+    worlds,
+    // Lebenslauf-Statistiken für Achievements.
+    stats: {
+      totalEarned: 0,
+      tipsCollected: 0
+    },
+    achievements: [], // IDs bereits freigeschalteter Achievements
+    muted: false
   };
 }
 

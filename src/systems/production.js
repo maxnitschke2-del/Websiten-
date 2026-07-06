@@ -19,5 +19,7 @@ export function worldIncomePerSec(stationCfgs, worldState) {
 
 export function tickProduction(state, stationCfgs, dt) {
   const worldState = state.worlds[state.currentWorld];
-  state.money += worldIncomePerSec(stationCfgs, worldState) * dt;
+  const gained = worldIncomePerSec(stationCfgs, worldState) * dt;
+  state.money += gained;
+  state.stats.totalEarned += gained;
 }

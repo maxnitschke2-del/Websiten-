@@ -33,12 +33,12 @@ npm run preview  # Build lokal testen
 ## Build-Phasen
 
 - [x] **Phase 1** – Grundgerüst: Welt 1, erste Station, Kamera-Framing (komplette Straße), UI-Proportionen (3D-Szene 62% Höhe)
-- [ ] Phase 2 – Alle 4 Stationen in Welt 1 + Kosten-Skalierung
+- [x] **Phase 2** – Alle 4 Stationen in Welt 1 freischaltbar + Kosten-Skalierung nach Balancing-Regeln
 - [x] **Phase 3** – Personal arbeitet sichtbar, Kunden laufen animiert rein/raus, Tap-to-Collect Trinkgeld
 - [x] **Phase 4** – Save/Load (localStorage) + Offline-Progress mit 3h-Cap
 - [x] **Phase 5** – Welt 2 (Taco Fiesta) + Welt-Freischaltung/-Wechsel, Balancing gegengerechnet (Max ≈ 40% der nächsten Welt)
 - [x] **Phase 6** – Welt 3 (Sushi Harbor) + Welt 4 (Sweet Dreams), Balancing im ×1600-Raster gegengerechnet
-- [ ] Phase 7 – Polish: Achievements, Partikel, Sound-Hooks, Monetization-Stub
+- [x] **Phase 7** – Polish: Achievements (11), Partikel-Effekte, Sound-Hooks, MonetizationService-Stub (Rewarded-Ad-Doubler)
 
 ## Balancing-Regeln
 
