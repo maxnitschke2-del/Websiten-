@@ -70,6 +70,7 @@ function activateWorld(worldId) {
     world3d.stationLayout,
     {
       worldGroup: world3d.group,
+      tableLayout: world3d.tableLayout,
       isUnlocked: (id) => state.worlds[worldId].stations[id].unlocked,
       getIncomePerSec: () => worldIncomePerSec(stationCfgs, state.worlds[worldId]),
       onTip: collectTip

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { buildPerson } from './models/people.js';
-import { STREET_Z } from './models/worldBuilder.js';
+import { STREET_Z, TRUCK_Z, box, cylinder, sphere } from './models/worldBuilder.js';
 import { tipValue, TIP_COIN_LIFETIME, MAX_TIP_COINS } from '../systems/tips.js';
 
 // Verwaltet die belebte Szene: Personal arbeitet sichtbar an den Stationen,
@@ -13,9 +13,15 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
   const workers = {}; // stationId -> { group, arms }
   const customers = new Set();
   const coins = new Set();
+  const waiters = new Set();
+  const foods = new Set();
+
+  // Tische mit Belegungsstatus (aus dem Welt-Aufbau).
+  const tables = (hooks.tableLayout || []).map((t) => ({ ...t, occupied: false }));
 
   const ENTER_X = -9.5;
   const EXIT_X = 9.5;
+  const WAITER_HOME_Z = TRUCK_Z + 1.6;
 
   // ---------- Personal ----------
   function addWorker(stationId) {
@@ -57,33 +63,111 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     });
   }
 
-  // ---------- Kunden ----------
-  function spawnCustomer() {
-    const openStations = layout.filter((s) => hooks.isUnlocked(s.id));
-    if (openStations.length === 0) return;
-    const target = openStations[Math.floor(Math.random() * openStations.length)];
-
-    const person = buildPerson({
-      bodyColor:
-        palette.customerColors[
-          Math.floor(Math.random() * palette.customerColors.length)
-        ]
-    });
-    const g = person.group;
-    g.position.set(ENTER_X, 0, STREET_Z);
-    g.rotation.y = Math.PI / 2; // nach rechts blickend
-    worldGroup.add(g);
-    customers.add(g);
-
-    // Geh-Wippen, solange der Kunde unterwegs ist
-    const bob = gsap.to(g.position, {
+  // Kontinuierliches Geh-Wippen (Basis y=0).
+  function walkBob(g) {
+    return gsap.to(g.position, {
       y: 0.05,
       duration: 0.28,
       ease: 'sine.inOut',
       yoyo: true,
       repeat: -1
     });
+  }
 
+  function randomCustomer() {
+    return buildPerson({
+      bodyColor:
+        palette.customerColors[
+          Math.floor(Math.random() * palette.customerColors.length)
+        ]
+    });
+  }
+
+  function freeTable() {
+    const free = tables.filter((t) => !t.occupied);
+    if (free.length === 0) return null;
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  // ---------- Kunden ----------
+  // Ist ein Tisch frei, setzt sich der Kunde und wird bedient; sonst
+  // holt er sich das Essen an der Theke (Takeaway-Fallback bei vollem Lokal).
+  function spawnCustomer() {
+    const openStations = layout.filter((s) => hooks.isUnlocked(s.id));
+    if (openStations.length === 0) return;
+    const table = freeTable();
+    if (table) spawnSeatedCustomer(table);
+    else spawnTakeawayCustomer(openStations);
+  }
+
+  function spawnSeatedCustomer(table) {
+    table.occupied = true;
+    const person = randomCustomer();
+    const g = person.group;
+    g.position.set(ENTER_X, 0, STREET_Z);
+    g.rotation.y = Math.PI / 2;
+    worldGroup.add(g);
+    customers.add(g);
+
+    let bob = walkBob(g);
+    const tl = gsap.timeline({
+      onComplete: () => {
+        if (g.userData.bob) g.userData.bob.kill();
+        worldGroup.remove(g);
+        customers.delete(g);
+        table.occupied = false;
+      }
+    });
+    g.userData.bob = bob;
+    g.userData.tl = tl;
+
+    // reinlaufen bis auf Höhe des Tisches, dann zum Sitzplatz treten
+    tl.to(g.position, { x: table.x, z: STREET_Z, duration: 1.0, ease: 'power1.out' });
+    tl.call(() => { g.rotation.y = Math.PI; });
+    tl.to(g.position, { z: table.seatZ, duration: 0.6, ease: 'power1.inOut' });
+
+    // hinsetzen: Geh-Wippen stoppen, absenken, Kellner losschicken
+    tl.call(() => {
+      bob.kill();
+      g.userData.bob = null;
+      dispatchWaiter(table);
+    });
+    tl.to(g.position, { y: -0.35, duration: 0.3, ease: 'power1.in' });
+
+    // warten bis das Essen serviert ist
+    tl.to({}, { duration: SERVE_DURATION });
+
+    // essen: kleines Auf-und-Ab
+    tl.to(g.position, {
+      y: -0.28,
+      duration: 0.22,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: 5
+    });
+
+    // aufstehen, Essen abräumen, Trinkgeld hinterlassen, rausgehen
+    tl.to(g.position, { y: 0, duration: 0.28, ease: 'power1.out' });
+    tl.call(() => {
+      removeFood(table);
+      dropCoin(table.x, table.seatZ - 0.2);
+      g.rotation.y = Math.PI / 2;
+      g.userData.bob = walkBob(g);
+    });
+    tl.to(g.position, { z: STREET_Z, duration: 0.6, ease: 'power1.inOut' });
+    tl.to(g.position, { x: EXIT_X, duration: 1.4, ease: 'power1.in' });
+  }
+
+  function spawnTakeawayCustomer(openStations) {
+    const target = openStations[Math.floor(Math.random() * openStations.length)];
+    const person = randomCustomer();
+    const g = person.group;
+    g.position.set(ENTER_X, 0, STREET_Z);
+    g.rotation.y = Math.PI / 2;
+    worldGroup.add(g);
+    customers.add(g);
+
+    const bob = walkBob(g);
     const tl = gsap.timeline({
       onComplete: () => {
         bob.kill();
@@ -91,36 +175,105 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
         customers.delete(g);
       }
     });
-    // Referenzen für sauberes Aufräumen beim Welt-Wechsel merken.
     g.userData.bob = bob;
     g.userData.tl = tl;
 
-    // rein zur Theke
     tl.to(g.position, {
       x: target.x,
       z: target.customerZ,
       duration: 1.6,
-      ease: 'power1.inOut',
-      onStart: () => {
-        g.rotation.y = Math.PI / 2;
-      }
+      ease: 'power1.inOut'
     });
-    // an der Theke: zum Tresen drehen, kurz warten (Bestellung)
-    tl.call(() => {
-      g.rotation.y = Math.PI; // zur Theke (Richtung -z)
-    });
+    tl.call(() => { g.rotation.y = Math.PI; });
     tl.to({}, { duration: 1.2 });
-    // Trinkgeld hinterlassen und weiterlaufen
     tl.call(() => {
       dropCoin(target.x, target.customerZ);
       g.rotation.y = Math.PI / 2;
     });
-    tl.to(g.position, {
-      x: EXIT_X,
-      z: STREET_Z,
-      duration: 1.6,
-      ease: 'power1.in'
+    tl.to(g.position, { x: EXIT_X, z: STREET_Z, duration: 1.6, ease: 'power1.in' });
+  }
+
+  // ---------- Kellner (Servieren) ----------
+  const SERVE_WALK = 1.5;
+  const SERVE_ACT = 0.5;
+  const SERVE_DURATION = SERVE_WALK + SERVE_ACT; // bis das Essen am Tisch steht
+
+  function dispatchWaiter(table) {
+    const waiter = buildPerson({
+      bodyColor: 0xffffff,
+      apronColor: palette.workerColor,
+      hatColor: 0xffffff
     });
+    const g = waiter.group;
+    const homeX = table.x < 0 ? -1.2 : 1.2;
+    g.position.set(homeX, 0, WAITER_HOME_Z);
+    g.rotation.y = 0;
+    // Tablett in der Hand
+    const tray = buildFoodPlate();
+    tray.position.set(0.28, 0.7, 0.2);
+    g.add(tray);
+    worldGroup.add(g);
+    waiters.add(g);
+
+    const bob = walkBob(g);
+    const tl = gsap.timeline({
+      onComplete: () => {
+        bob.kill();
+        worldGroup.remove(g);
+        waiters.delete(g);
+      }
+    });
+    g.userData.bob = bob;
+    g.userData.tl = tl;
+
+    // zum Serveplatz laufen (Truck-Seite des Tisches)
+    tl.to(g.position, {
+      x: table.x,
+      z: table.serveZ,
+      duration: SERVE_WALK,
+      ease: 'power1.inOut'
+    });
+    // servieren: Arm heben, Essen auf den Tisch stellen, Tablett ablegen
+    tl.call(() => {
+      gsap.to(waiter.arms.right.rotation, { x: -1.2, duration: 0.25, yoyo: true, repeat: 1, ease: 'sine.inOut' });
+      placeFood(table);
+      g.remove(tray);
+    });
+    tl.to({}, { duration: SERVE_ACT });
+    // zurück zum Truck
+    tl.call(() => { g.rotation.y = Math.PI; });
+    tl.to(g.position, { x: homeX, z: WAITER_HOME_Z, duration: SERVE_WALK * 0.9, ease: 'power1.in' });
+  }
+
+  // ---------- Essen auf dem Tisch ----------
+  function buildFoodPlate() {
+    const plate = new THREE.Group();
+    const disk = cylinder(0.18, 0.18, 0.04, 0xf6f7eb, 14);
+    plate.add(disk);
+    const food = sphere(0.12, palette.accent, 10);
+    food.scale.y = 0.7;
+    food.position.y = 0.1;
+    plate.add(food);
+    return plate;
+  }
+
+  function placeFood(table) {
+    removeFood(table);
+    const plate = buildFoodPlate();
+    plate.position.set(table.x, 0.98, table.z);
+    plate.scale.setScalar(0.01);
+    worldGroup.add(plate);
+    table.foodMesh = plate;
+    foods.add(plate);
+    gsap.to(plate.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'back.out(2)' });
+  }
+
+  function removeFood(table) {
+    const plate = table.foodMesh;
+    if (!plate) return;
+    table.foodMesh = null;
+    foods.delete(plate);
+    worldGroup.remove(plate);
   }
 
   // ---------- Trinkgeld-Münzen ----------
@@ -237,7 +390,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
       gsap.killTweensOf(w.arms.left.rotation);
       gsap.killTweensOf(w.arms.right.rotation);
     }
-    for (const g of customers) {
+    for (const g of [...customers, ...waiters]) {
       if (g.userData.tl) g.userData.tl.kill();
       if (g.userData.bob) g.userData.bob.kill();
       gsap.killTweensOf(g.position);
@@ -248,8 +401,10 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
       gsap.killTweensOf(coin.rotation);
       gsap.killTweensOf(coin.scale);
     }
+    for (const plate of foods) gsap.killTweensOf(plate.scale);
     customers.clear();
-    coins.clear();
+    waiters.clear();
+    foods.clear();
   }
 
   return { addWorker, update, dispose };

@@ -15,6 +15,11 @@ export const CUSTOMER_DZ = 1.35;
 export const SIDEWALK_Z = STATION_Z + CUSTOMER_DZ;
 export const STREET_Z = 4.2;
 
+// Sitzbereich im Vordergrund (Kamera-Seite, hinter der Straße).
+export const TABLE_Z = 5.9;
+export const SEAT_DZ = 0.6; // Kunde sitzt kameraseitig am Tisch
+export const SERVE_DZ = -0.75; // Kellner bedient von der Truck-Seite
+
 export function mat(color, opts = {}) {
   return new THREE.MeshStandardMaterial({
     color,
@@ -46,6 +51,7 @@ export function buildWorld(scene, worldCfg, stationCfgs, worldStationState, worl
 
   buildGround(group, palette);
   buildTruck(group, palette, worldModel.emblem);
+  const tableLayout = buildTables(group, palette, stationCfgs.length);
 
   const stationMeshes = {};
   const stationLayout = [];
@@ -69,13 +75,13 @@ export function buildWorld(scene, worldCfg, stationCfgs, worldStationState, worl
 
   scene.add(group);
 
-  // Kamera-Rahmen: Truck + alle 4 Stationen inkl. Straßenstreifen.
+  // Kamera-Rahmen: Truck + alle Stationen + der Sitzbereich im Vordergrund.
   const frameBounds = new THREE.Box3(
     new THREE.Vector3(-(count / 2) * STATION_SPACING - 1.4, 0, TRUCK_Z - 1.6),
-    new THREE.Vector3((count / 2) * STATION_SPACING + 1.4, 3.6, STATION_Z + 3.4)
+    new THREE.Vector3((count / 2) * STATION_SPACING + 1.4, 3.6, TABLE_Z + 1.2)
   );
 
-  return { group, stationMeshes, stationLayout, frameBounds };
+  return { group, stationMeshes, stationLayout, tableLayout, frameBounds };
 }
 
 export function swapToUnlockedStation(group, stationMeshes, id, palette, worldModel) {
@@ -206,6 +212,50 @@ export function buildCounter(palette) {
   top.position.y = 1.07;
   station.add(top);
   return station;
+}
+
+// Sitzbereich: 3 kleine Tische mit Stuhl im Vordergrund. Liefert die Anker
+// (Kunden-Sitzplatz, Kellner-Serveplatz, Tischmitte) fürs Entity-System.
+function buildTables(group, palette, stationCount) {
+  const halfW = (stationCount / 2) * STATION_SPACING;
+  const xs = [-halfW * 0.62, 0, halfW * 0.62];
+  const layout = [];
+
+  xs.forEach((x, i) => {
+    const table = new THREE.Group();
+
+    const leg = cylinder(0.1, 0.13, 0.85, 0x8a6d4f, 10);
+    leg.position.y = 0.42;
+    table.add(leg);
+    const top = cylinder(0.56, 0.56, 0.1, palette.counterTop, 18);
+    top.position.y = 0.9;
+    table.add(top);
+
+    // Stuhl auf der Kamera-Seite (Kunde sitzt mit Blick zum Tisch)
+    const seatZ = SEAT_DZ;
+    const chairSeat = box(0.5, 0.08, 0.5, palette.accent);
+    chairSeat.position.set(0, 0.5, seatZ);
+    table.add(chairSeat);
+    const chairLeg = cylinder(0.07, 0.08, 0.5, 0x6d4c33, 8);
+    chairLeg.position.set(0, 0.25, seatZ);
+    table.add(chairLeg);
+    const chairBack = box(0.5, 0.5, 0.08, palette.accent);
+    chairBack.position.set(0, 0.75, seatZ + 0.24);
+    table.add(chairBack);
+
+    table.position.set(x, 0, TABLE_Z);
+    group.add(table);
+
+    layout.push({
+      index: i,
+      x,
+      z: TABLE_Z,
+      seatZ: TABLE_Z + SEAT_DZ,
+      serveZ: TABLE_Z + SERVE_DZ
+    });
+  });
+
+  return layout;
 }
 
 function buildStation(id, palette, worldModel) {
