@@ -106,9 +106,17 @@ body {
 
 #world-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.world-title {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
 #world-name {
@@ -120,6 +128,59 @@ body {
 #world-signature {
   font-size: 0.75rem;
   color: var(--text-dim);
+}
+
+.world-nav {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.world-nav:active {
+  transform: scale(0.9);
+}
+
+.world-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ---------- Welt-Freischalt-Banner ---------- */
+#unlock-banner {
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  background: #b9a88a;
+  cursor: default;
+  transition: transform 0.08s ease;
+}
+
+#unlock-banner.ready {
+  background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(230, 85, 31, 0.35);
+  animation: bannerPulse 1.4s ease-in-out infinite;
+}
+
+#unlock-banner.ready:active {
+  transform: scale(0.98);
+}
+
+@keyframes bannerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 #stations-list {

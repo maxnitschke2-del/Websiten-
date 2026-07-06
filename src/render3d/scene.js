@@ -86,6 +86,10 @@ export function createScene(container, palette) {
       frameBox = box;
       refit();
     },
+    setBackground(palette) {
+      scene.background.set(palette.sky);
+      scene.fog.color.set(palette.sky);
+    },
     render() {
       renderer.render(scene, camera);
     }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { buildPerson } from './models/people.js';
-import { STREET_Z } from './models/world1.js';
+import { STREET_Z } from './models/worldBuilder.js';
 import { tipValue, TIP_COIN_LIFETIME, MAX_TIP_COINS } from '../systems/tips.js';
 
 // Verwaltet die belebte Szene: Personal arbeitet sichtbar an den Stationen,
@@ -91,6 +91,9 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
         customers.delete(g);
       }
     });
+    // Referenzen für sauberes Aufräumen beim Welt-Wechsel merken.
+    g.userData.bob = bob;
+    g.userData.tl = tl;
 
     // rein zur Theke
     tl.to(g.position, {
@@ -224,5 +227,30 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     }
   }
 
-  return { addWorker, update };
+  // Räumt Tweens, Timeouts und den Tap-Listener beim Welt-Wechsel auf.
+  // Die Meshes selbst hängen an worldGroup und werden dort disposed.
+  function dispose() {
+    domElement.removeEventListener('pointerdown', onTap);
+    for (const id in workers) {
+      const w = workers[id];
+      gsap.killTweensOf(w.group.position);
+      gsap.killTweensOf(w.arms.left.rotation);
+      gsap.killTweensOf(w.arms.right.rotation);
+    }
+    for (const g of customers) {
+      if (g.userData.tl) g.userData.tl.kill();
+      if (g.userData.bob) g.userData.bob.kill();
+      gsap.killTweensOf(g.position);
+    }
+    for (const coin of coins) {
+      clearTimeout(coin.userData.timeout);
+      gsap.killTweensOf(coin.position);
+      gsap.killTweensOf(coin.rotation);
+      gsap.killTweensOf(coin.scale);
+    }
+    customers.clear();
+    coins.clear();
+  }
+
+  return { addWorker, update, dispose };
 }

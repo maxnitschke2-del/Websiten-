@@ -29,9 +29,14 @@
 
       <section id="panel">
         <div id="world-header">
-          <span id="world-name"></span>
-          <span id="world-signature"></span>
+          <button id="world-prev" class="world-nav" aria-label="Vorherige Welt">‹</button>
+          <div class="world-title">
+            <span id="world-name"></span>
+            <span id="world-signature"></span>
+          </div>
+          <button id="world-next" class="world-nav" aria-label="Nächste Welt">›</button>
         </div>
+        <button id="unlock-banner" hidden></button>
         <div id="stations-list"></div>
       </section>
     </div>

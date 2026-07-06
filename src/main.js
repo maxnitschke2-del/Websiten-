@@ -6,50 +6,71 @@ import { startLoop } from './core/gameLoop.js';
 import { saveGame, loadGame } from './core/save.js';
 import { tickProduction, worldIncomePerSec } from './systems/production.js';
 import { upgradeCost } from './systems/costScaling.js';
+import { worldCfgById } from './systems/worldUnlock.js';
 import { createScene } from './render3d/scene.js';
-import { buildWorld1, swapToUnlockedStation } from './render3d/models/world1.js';
+import {
+  buildWorld,
+  swapToUnlockedStation,
+  disposeObject
+} from './render3d/models/worldBuilder.js';
+import { WORLD_MODELS } from './render3d/models/registry.js';
 import { createEntitySystem } from './render3d/entities.js';
 import { createUI } from './ui/render.js';
 import { showOfflineModal } from './ui/overlay.js';
 
 // Gespeicherten Stand laden (inkl. Offline-Progress) oder frisch starten.
-// Vor dem Szenen-Aufbau, damit freigeschaltete Stationen direkt erscheinen.
 const loaded = loadGame();
 const state = loaded ? loaded.state : createInitialState();
-const worldCfg = WORLDS[0];
-const stationCfgs = STATIONS[worldCfg.id];
 
 const container = document.getElementById('scene-container');
-const scene3d = createScene(container, worldCfg.palette);
-const world3d = buildWorld1(
-  scene3d.scene,
-  worldCfg.palette,
-  stationCfgs,
-  state.worlds[worldCfg.id].stations
-);
-scene3d.setFrameBox(world3d.frameBounds);
+const scene3d = createScene(container, worldCfgById(state.currentWorld).palette);
 
-const worldState = () => state.worlds[state.currentWorld];
-const currentIncome = () =>
-  worldIncomePerSec(stationCfgs, worldState());
+const ui = createUI(state, { buy, switchWorld, unlockWorld });
 
-// Belebte Szene: Personal, Kunden, Tap-to-Collect-Trinkgeld.
-const entities = createEntitySystem(
-  scene3d.scene,
-  scene3d.camera,
-  scene3d.renderer.domElement,
-  worldCfg.palette,
-  world3d.stationLayout,
-  {
-    worldGroup: world3d.group,
-    isUnlocked: (id) => worldState().stations[id].unlocked,
-    getIncomePerSec: currentIncome,
-    onTip: collectTip
+// Die aktive Welt: 3D-Aufbau + belebte Szene. Beim Wechsel komplett neu gebaut.
+let active = null;
+
+function activateWorld(worldId) {
+  if (active) {
+    active.entities.dispose();
+    scene3d.scene.remove(active.world3d.group);
+    disposeObject(active.world3d.group);
   }
-);
-// Personal an bereits freigeschalteten Stationen aufstellen.
-for (const cfg of stationCfgs) {
-  if (worldState().stations[cfg.id].unlocked) entities.addWorker(cfg.id);
+
+  state.currentWorld = worldId;
+  const worldCfg = worldCfgById(worldId);
+  const stationCfgs = STATIONS[worldId];
+
+  const world3d = buildWorld(
+    scene3d.scene,
+    worldCfg,
+    stationCfgs,
+    state.worlds[worldId].stations,
+    WORLD_MODELS[worldId]
+  );
+  scene3d.setBackground(worldCfg.palette);
+  scene3d.setFrameBox(world3d.frameBounds);
+
+  const entities = createEntitySystem(
+    scene3d.scene,
+    scene3d.camera,
+    scene3d.renderer.domElement,
+    worldCfg.palette,
+    world3d.stationLayout,
+    {
+      worldGroup: world3d.group,
+      isUnlocked: (id) => state.worlds[worldId].stations[id].unlocked,
+      getIncomePerSec: () =>
+        worldIncomePerSec(stationCfgs, state.worlds[worldId]),
+      onTip: collectTip
+    }
+  );
+  for (const cfg of stationCfgs) {
+    if (state.worlds[worldId].stations[cfg.id].unlocked) entities.addWorker(cfg.id);
+  }
+
+  active = { worldCfg, stationCfgs, world3d, entities };
+  ui.setWorld(worldId);
 }
 
 function collectTip(amount) {
@@ -57,19 +78,9 @@ function collectTip(amount) {
   ui.pulseMoney();
 }
 
-const ui = createUI(state, worldCfg, stationCfgs, { buy });
-
-// Offline-Ertrag gutschreiben und "Willkommen zurück" zeigen.
-if (loaded && loaded.offline) {
-  state.money += loaded.offline.earned;
-  showOfflineModal(loaded.offline);
-}
-
-// Sofortiges visuelles Feedback bei jedem Kauf: Karte blitzt auf,
-// die 3D-Station macht einen Pop. Gesperrte Stationen werden beim
-// Freischalten in der Szene gegen die ausgebaute Variante getauscht.
+// Station kaufen/freischalten in der AKTIVEN Welt.
 function buy(stationId) {
-  const cfg = stationCfgs.find((s) => s.id === stationId);
+  const cfg = active.stationCfgs.find((s) => s.id === stationId);
   const st = state.worlds[state.currentWorld].stations[stationId];
   if (!cfg) return;
 
@@ -79,12 +90,13 @@ function buy(stationId) {
     st.unlocked = true;
     st.level = 1;
     const mesh = swapToUnlockedStation(
-      world3d.group,
-      world3d.stationMeshes,
+      active.world3d.group,
+      active.world3d.stationMeshes,
       stationId,
-      worldCfg.palette
+      active.worldCfg.palette,
+      WORLD_MODELS[state.currentWorld]
     );
-    entities.addWorker(stationId);
+    active.entities.addWorker(stationId);
     ui.flashCard(stationId);
     popStationMesh(mesh);
     return;
@@ -96,9 +108,24 @@ function buy(stationId) {
 
   state.money -= cost;
   st.level += 1;
-
   ui.flashCard(stationId);
-  popStationMesh(world3d.stationMeshes[stationId]);
+  popStationMesh(active.world3d.stationMeshes[stationId]);
+}
+
+// Zwischen bereits freigeschalteten Welten wechseln (kostenlos).
+function switchWorld(worldId) {
+  if (worldId === state.currentWorld) return;
+  if (!state.worlds[worldId]?.unlocked) return;
+  activateWorld(worldId);
+}
+
+// Nächste Welt freischalten (kostet Geld) und direkt hinwechseln.
+function unlockWorld(worldCfg) {
+  if (state.money < worldCfg.unlockCost) return;
+  state.money -= worldCfg.unlockCost;
+  state.worlds[worldCfg.id].unlocked = true;
+  saveGame(state); // Freischaltung sofort sichern
+  activateWorld(worldCfg.id);
 }
 
 function popStationMesh(mesh) {
@@ -111,30 +138,35 @@ function popStationMesh(mesh) {
   );
 }
 
-// Auto-Save: regelmäßig sowie beim Verlassen/Tab-Wechsel, damit der
-// letzte Stand und der Offline-Zeitstempel zuverlässig festgehalten sind.
-const AUTOSAVE_INTERVAL = 10; // Sekunden
+// Startwelt aufbauen.
+activateWorld(state.currentWorld);
+
+// Offline-Ertrag gutschreiben und "Willkommen zurück" zeigen.
+if (loaded && loaded.offline) {
+  state.money += loaded.offline.earned;
+  showOfflineModal(loaded.offline);
+}
+
+// Auto-Save: regelmäßig sowie beim Verlassen/Tab-Wechsel.
+const AUTOSAVE_INTERVAL = 10;
 let saveAcc = 0;
 
 function persist() {
   saveGame(state);
 }
-// pagehide deckt mobiles App-Wechseln/Schließen ab; visibilitychange den
-// Wechsel in den Hintergrund. Beide feuern zuverlässiger als beforeunload.
 window.addEventListener('pagehide', persist);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') persist();
 });
 
-// Debug-Zugriff nur im Dev-Modus (npm run dev), nie im Produktions-Build.
 if (import.meta.env.DEV) {
-  window.__ftGame = { state, save: persist, load: loadGame };
+  window.__ftGame = { state, save: persist, load: loadGame, activateWorld };
 }
 
 startLoop(
   (dt) => {
-    tickProduction(state, stationCfgs, dt);
-    entities.update(dt);
+    tickProduction(state, active.stationCfgs, dt);
+    active.entities.update(dt);
     saveAcc += dt;
     if (saveAcc >= AUTOSAVE_INTERVAL) {
       saveAcc = 0;

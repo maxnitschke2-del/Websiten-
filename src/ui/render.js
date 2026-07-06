@@ -3,63 +3,99 @@ import { formatMoney, formatNumber } from '../utils/formatNumber.js';
 import { upgradeCost } from '../systems/costScaling.js';
 import { worldIncomePerSec } from '../systems/production.js';
 import { nextMilestoneLevel } from '../utils/formulas.js';
+import { STATIONS } from '../data/stations.js';
+import {
+  worldCfgById,
+  nextWorldCfg,
+  prevWorldCfg,
+  isWorldUnlocked
+} from '../systems/worldUnlock.js';
 
 // DOM-Schicht, strikt getrennt von der 3D-Szene.
-// createUI baut die Elemente einmal, update() schreibt nur bei Änderungen.
-export function createUI(state, worldCfg, stationCfgs, actions) {
+// Baut die Karten für die AKTIVE Welt und wird bei Welt-Wechsel via
+// setWorld() neu aufgebaut. update() schreibt nur bei Änderungen.
+export function createUI(state, actions) {
   const el = {
     money: document.getElementById('money'),
     income: document.getElementById('income'),
     goal: document.getElementById('goal-chip'),
     worldName: document.getElementById('world-name'),
     worldSignature: document.getElementById('world-signature'),
+    prev: document.getElementById('world-prev'),
+    next: document.getElementById('world-next'),
+    banner: document.getElementById('unlock-banner'),
     list: document.getElementById('stations-list')
   };
 
-  el.worldName.textContent = `${worldCfg.name} · Welt ${worldCfg.index}/4`;
-  el.worldSignature.textContent = `Signature: ${worldCfg.signature}`;
+  let activeWorldId = null;
+  let stationCfgs = [];
+  let cards = {};
+  const topCache = {};
 
-  const cards = {};
-  for (const cfg of stationCfgs) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <span class="icon">${cfg.icon}</span>
-      <span class="name">${cfg.name}</span>
-      <span class="lvl"></span>
-      <button class="buy"></button>
-    `;
-    const buy = card.querySelector('.buy');
-    buy.addEventListener('click', () => actions.buy(cfg.id));
-    el.list.appendChild(card);
-    cards[cfg.id] = {
-      root: card,
-      lvl: card.querySelector('.lvl'),
-      buy,
-      cache: {}
-    };
+  el.prev.addEventListener('click', () => {
+    const p = prevWorldCfg(activeWorldId);
+    if (p && isWorldUnlocked(state, p.id)) actions.switchWorld(p.id);
+  });
+  el.next.addEventListener('click', () => {
+    const n = nextWorldCfg(activeWorldId);
+    if (n && isWorldUnlocked(state, n.id)) actions.switchWorld(n.id);
+  });
+  el.banner.addEventListener('click', () => {
+    const n = nextWorldCfg(activeWorldId);
+    if (n && !isWorldUnlocked(state, n.id) && state.money >= n.unlockCost) {
+      actions.unlockWorld(n);
+    }
+  });
+
+  // (Neu-)Aufbau der Karten und Kopfzeile für eine Welt.
+  function setWorld(worldId) {
+    activeWorldId = worldId;
+    stationCfgs = STATIONS[worldId];
+    const worldCfg = worldCfgById(worldId);
+
+    el.worldName.textContent = `${worldCfg.name} · Welt ${worldCfg.index}/4`;
+    el.worldSignature.textContent = `Signature: ${worldCfg.signature}`;
+
+    el.list.innerHTML = '';
+    cards = {};
+    for (const cfg of stationCfgs) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <span class="icon">${cfg.icon}</span>
+        <span class="name">${cfg.name}</span>
+        <span class="lvl"></span>
+        <button class="buy"></button>
+      `;
+      card.querySelector('.buy').addEventListener('click', () => actions.buy(cfg.id));
+      el.list.appendChild(card);
+      cards[cfg.id] = {
+        root: card,
+        lvl: card.querySelector('.lvl'),
+        buy: card.querySelector('.buy'),
+        cache: {}
+      };
+    }
+    // Caches zurücksetzen, damit nach dem Wechsel alles neu geschrieben wird.
+    for (const k in topCache) delete topCache[k];
+    update();
   }
 
-  // Nur schreiben, wenn sich der Wert geändert hat – kein DOM-Thrashing im Loop.
   function setText(node, cache, key, value) {
     if (cache[key] === value) return;
     cache[key] = value;
     node.textContent = value;
   }
 
-  const topCache = {};
-
   function update() {
-    const worldState = state.worlds[state.currentWorld];
+    const worldState = state.worlds[activeWorldId];
 
     setText(el.money, topCache, 'money', formatMoney(state.money));
     const income = worldIncomePerSec(stationCfgs, worldState);
     setText(el.income, topCache, 'income', `+${formatNumber(income)}/s`);
-
-    // Nächstes Ziel immer sichtbar: erst die nächste gesperrte Station,
-    // danach der nächste Meilenstein der schwächsten Station.
-    // (Ab Phase 7 übernehmen Achievements diese Rolle.)
     setText(el.goal, topCache, 'goal', nextGoalText(worldState));
+
+    updateWorldNav();
 
     for (const cfg of stationCfgs) {
       const st = worldState.stations[cfg.id];
@@ -69,11 +105,7 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
         card.root.classList.add('locked');
         setText(card.lvl, card.cache, 'lvl', '🔒');
         setText(card.buy, card.cache, 'buy', `🔓 ${formatMoney(cfg.unlockCost)}`);
-        const affordable = state.money >= cfg.unlockCost;
-        if (card.cache.affordable !== affordable) {
-          card.cache.affordable = affordable;
-          card.buy.disabled = !affordable;
-        }
+        setAffordable(card, state.money >= cfg.unlockCost);
         continue;
       }
 
@@ -87,13 +119,47 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
       } else {
         const cost = upgradeCost(cfg, st.level);
         setText(card.buy, card.cache, 'buy', formatMoney(cost));
-        const affordable = state.money >= cost;
-        if (card.cache.affordable !== affordable) {
-          card.cache.affordable = affordable;
-          card.buy.disabled = !affordable;
-        }
+        setAffordable(card, state.money >= cost);
       }
     }
+  }
+
+  function setAffordable(card, affordable) {
+    if (card.cache.affordable !== affordable) {
+      card.cache.affordable = affordable;
+      card.buy.disabled = !affordable;
+    }
+  }
+
+  // Pfeile aktivieren, wenn Nachbarwelt freigeschaltet ist. Auf der obersten
+  // freigeschalteten Welt: Freischalt-Banner der nächsten Welt einblenden.
+  function updateWorldNav() {
+    const prev = prevWorldCfg(activeWorldId);
+    const next = nextWorldCfg(activeWorldId);
+    const prevOpen = !!prev && isWorldUnlocked(state, prev.id);
+    const nextOpen = !!next && isWorldUnlocked(state, next.id);
+
+    setNav(el.prev, prevOpen);
+    setNav(el.next, nextOpen);
+
+    if (next && !nextOpen) {
+      const affordable = state.money >= next.unlockCost;
+      el.banner.hidden = false;
+      setText(el.banner, topCache, 'banner',
+        `🔓 ${next.name} freischalten — ${formatMoney(next.unlockCost)}`);
+      if (topCache.bannerAfford !== affordable) {
+        topCache.bannerAfford = affordable;
+        el.banner.disabled = !affordable;
+        el.banner.classList.toggle('ready', affordable);
+      }
+    } else {
+      el.banner.hidden = true;
+    }
+  }
+
+  function setNav(btn, enabled) {
+    btn.disabled = !enabled;
+    btn.classList.toggle('active', enabled);
   }
 
   function nextGoalText(worldState) {
@@ -107,7 +173,13 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
       if (lvl >= cfg.levelCap) continue;
       if (!weakest || lvl < worldState.stations[weakest.id].level) weakest = cfg;
     }
-    if (!weakest) return '🎯 Welt komplett ausgebaut!';
+    if (!weakest) {
+      const next = nextWorldCfg(activeWorldId);
+      if (next && !isWorldUnlocked(state, next.id)) {
+        return `🎯 ${next.name} freischalten (${formatMoney(next.unlockCost)})`;
+      }
+      return '🎯 Welt komplett ausgebaut!';
+    }
     const lvl = worldState.stations[weakest.id].level;
     return `🎯 ${weakest.name} Lv ${nextMilestoneLevel(lvl)} → ×2 Produktion`;
   }
@@ -122,7 +194,6 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
     );
   }
 
-  // Kurzer Puls des Geld-Zählers, wenn Trinkgeld eingesammelt wird.
   function pulseMoney() {
     gsap.fromTo(
       el.money,
@@ -131,5 +202,5 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
     );
   }
 
-  return { update, flashCard, pulseMoney };
+  return { setWorld, update, flashCard, pulseMoney };
 }
