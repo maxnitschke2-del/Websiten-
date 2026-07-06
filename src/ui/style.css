@@ -194,3 +194,67 @@ body {
 .card .buy.maxed {
   background: var(--accent);
 }
+
+/* ---------- Willkommen-zurück-Modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(28, 20, 12, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 320px;
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 26px 22px 22px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.modal-emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.modal-card h2 {
+  margin: 10px 0 4px;
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.modal-sub {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.modal-earned {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--green);
+  margin-bottom: 18px;
+}
+
+.modal-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+
+.modal-btn:active {
+  transform: scale(0.97);
+}

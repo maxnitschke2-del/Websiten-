@@ -35,7 +35,7 @@ npm run preview  # Build lokal testen
 - [x] **Phase 1** – Grundgerüst: Welt 1, erste Station, Kamera-Framing (komplette Straße), UI-Proportionen (3D-Szene 62% Höhe)
 - [ ] Phase 2 – Alle 4 Stationen in Welt 1 + Kosten-Skalierung
 - [x] **Phase 3** – Personal arbeitet sichtbar, Kunden laufen animiert rein/raus, Tap-to-Collect Trinkgeld
-- [ ] Phase 4 – Save/Load + Offline-Progress (3h-Cap)
+- [x] **Phase 4** – Save/Load (localStorage) + Offline-Progress mit 3h-Cap
 - [ ] Phase 5 – Welt 2 + Welt-Freischaltung nach Balancing-Regel
 - [ ] Phase 6 – Welt 3 + Welt 4
 - [ ] Phase 7 – Polish: Achievements, Partikel, Sound-Hooks, Monetization-Stub
