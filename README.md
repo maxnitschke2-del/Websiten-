@@ -38,7 +38,14 @@ npm run preview  # Build lokal testen
 - [x] **Phase 4** – Save/Load (localStorage) + Offline-Progress mit 3h-Cap
 - [x] **Phase 5** – Welt 2 (Taco Fiesta) + Welt-Freischaltung/-Wechsel, Balancing gegengerechnet (Max ≈ 40% der nächsten Welt)
 - [x] **Phase 6** – Welt 3 (Sushi Harbor) + Welt 4 (Sweet Dreams), Balancing im ×1600-Raster gegengerechnet
-- [x] **Phase 7** – Polish: Achievements (11), Partikel-Effekte, Sound-Hooks, MonetizationService-Stub (Rewarded-Ad-Doubler)
+- [x] **Phase 7** – Polish: Achievements, Partikel-Effekte, Sound-Hooks, MonetizationService-Stub (Rewarded-Ad-Doubler)
+
+## Erweiterungen
+
+- [x] **E1** – Kunden setzen sich an Tische (5 pro Welt auf der Grünfläche), Personal serviert vom Truck
+- [x] **E2** – 6 Stationen pro Welt + Level-Cap 100; Kosten-Kurve neu gerechnet (Max ≈ 40 % der nächsten Welt bleibt erhalten)
+- [x] **E3** – Manager pro Truck: ×1.5 Produktion + Auto-Trinkgeld (nicht-gemanagte Trucks brauchen weiter Tappen)
+- [x] **E4** – Größere unsichtbare Tap-Zone der Trinkgeld-Münzen (~6× Radius) für leichteres Treffen
 
 ## Balancing-Regeln
 

@@ -252,7 +252,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 if (import.meta.env.DEV) {
-  window.__ftGame = { state, save: persist, load: loadGame, activateWorld };
+  window.__ftGame = { state, save: persist, load: loadGame, activateWorld, scene3d };
 }
 
 startLoop(

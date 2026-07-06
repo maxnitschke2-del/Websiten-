@@ -15,6 +15,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
   const coins = new Set();
   const waiters = new Set();
   const foods = new Set();
+  const hitTargets = new Set(); // vergrößerte, unsichtbare Tap-Zonen der Münzen
 
   // Tische mit Belegungsstatus (aus dem Welt-Aufbau).
   const tables = (hooks.tableLayout || []).map((t) => ({ ...t, occupied: false }));
@@ -286,6 +287,12 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     emissiveIntensity: 0.25
   });
 
+  // Unsichtbare, deutlich größere Tap-Zone pro Münze (Radius ~6× der Münze,
+  // ~40px Durchmesser am Handy), damit man Münzen leicht trifft – auch wenn
+  // mit den Tischen mehrere gleichzeitig auf dem Screen liegen.
+  const hitGeo = new THREE.SphereGeometry(1.3, 8, 8);
+  const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+
   function dropCoin(x, z) {
     if (coins.size >= MAX_TIP_COINS) return;
     const coin = new THREE.Mesh(coinGeo, coinMat);
@@ -295,8 +302,18 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     coin.scale.setScalar(0.01);
     coin.userData.value = tipValue(hooks.getIncomePerSec());
     coin.userData.alive = true;
+    coin.userData.isTipCoin = true; // Marker für Tests
     worldGroup.add(coin);
     coins.add(coin);
+
+    // Größere unsichtbare Trefferfläche als Kind der Münze (folgt Position/Scale).
+    // Die Münze rotiert und ist flach skaliert – die Hit-Kugel gleicht das aus,
+    // damit die Tap-Zone rund und großzügig bleibt.
+    const hit = new THREE.Mesh(hitGeo, hitMat);
+    hit.userData.coin = coin;
+    coin.add(hit);
+    coin.userData.hit = hit;
+    hitTargets.add(hit);
 
     gsap.to(coin.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: 'back.out(2)' });
     // dezentes Schweben + Drehen, damit sie auffällt ohne aufdringlich zu sein
@@ -330,6 +347,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     gsap.killTweensOf(coin.position);
     gsap.killTweensOf(coin.rotation);
     coins.delete(coin);
+    if (coin.userData.hit) hitTargets.delete(coin.userData.hit);
 
     if (collected) {
       gsap.to(coin.position, { y: 1.6, duration: 0.4, ease: 'power2.out' });
@@ -365,10 +383,12 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     pointer.x = ((cx - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((cy - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects([...coins], false);
+    // Gegen die vergrößerten Tap-Zonen testen (nächste zuerst) und auf die
+    // zugehörige Münze abbilden.
+    const hits = raycaster.intersectObjects([...hitTargets], false);
     if (hits.length > 0) {
-      const coin = hits[0].object;
-      if (coin.userData.alive) {
+      const coin = hits[0].object.userData.coin;
+      if (coin && coin.userData.alive) {
         hooks.onTip(coin.userData.value, coin.getWorldPosition(new THREE.Vector3()));
         removeCoin(coin, true);
       }
@@ -416,6 +436,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     customers.clear();
     waiters.clear();
     foods.clear();
+    hitTargets.clear();
   }
 
   return { addWorker, update, dispose };
