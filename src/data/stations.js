@@ -95,5 +95,91 @@ export const STATIONS = {
       levelCap: 50,
       unlockCost: 80000000
     }
+  ],
+  // Welt 3 = Welt 1 × 1600² (= ×2.56e6).
+  w3: [
+    {
+      id: 'rolls',
+      name: 'Maki-Rollen',
+      icon: '🍣',
+      baseCost: 10.24e6,
+      baseIncome: 2.56e6,
+      growthRate: 1.14,
+      levelCap: 50,
+      unlockCost: 0
+    },
+    {
+      id: 'nigiri',
+      name: 'Nigiri-Theke',
+      icon: '🍤',
+      baseCost: 153.6e6,
+      baseIncome: 17.92e6,
+      growthRate: 1.15,
+      levelCap: 50,
+      unlockCost: 768e6
+    },
+    {
+      id: 'tea',
+      name: 'Grüntee-Bar',
+      icon: '🍵',
+      baseCost: 1.92e9,
+      baseIncome: 115.2e6,
+      growthRate: 1.15,
+      levelCap: 50,
+      unlockCost: 10.24e9
+    },
+    {
+      id: 'mochi',
+      name: 'Mochi-Theke',
+      icon: '🍡',
+      baseCost: 23.04e9,
+      baseIncome: 716.8e6,
+      growthRate: 1.16,
+      levelCap: 50,
+      unlockCost: 128e9
+    }
+  ],
+  // Welt 4 = Welt 1 × 1600³ (= ×4.096e9).
+  w4: [
+    {
+      id: 'sundae',
+      name: 'Sundae-Theke',
+      icon: '🍨',
+      baseCost: 16.384e9,
+      baseIncome: 4.096e9,
+      growthRate: 1.14,
+      levelCap: 50,
+      unlockCost: 0
+    },
+    {
+      id: 'donuts',
+      name: 'Donut-Theke',
+      icon: '🍩',
+      baseCost: 245.76e9,
+      baseIncome: 28.672e9,
+      growthRate: 1.15,
+      levelCap: 50,
+      unlockCost: 1.2288e12
+    },
+    {
+      id: 'shakes',
+      name: 'Milchshake-Bar',
+      icon: '🥤',
+      baseCost: 3.072e12,
+      baseIncome: 184.32e9,
+      growthRate: 1.15,
+      levelCap: 50,
+      unlockCost: 16.384e12
+    },
+    {
+      id: 'cupcakes',
+      name: 'Cupcake-Theke',
+      icon: '🧁',
+      baseCost: 36.864e12,
+      baseIncome: 1.14688e12,
+      growthRate: 1.16,
+      levelCap: 50,
+      unlockCost: 204.8e12
+    }
   ]
 };

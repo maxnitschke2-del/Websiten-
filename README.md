@@ -37,7 +37,7 @@ npm run preview  # Build lokal testen
 - [x] **Phase 3** – Personal arbeitet sichtbar, Kunden laufen animiert rein/raus, Tap-to-Collect Trinkgeld
 - [x] **Phase 4** – Save/Load (localStorage) + Offline-Progress mit 3h-Cap
 - [x] **Phase 5** – Welt 2 (Taco Fiesta) + Welt-Freischaltung/-Wechsel, Balancing gegengerechnet (Max ≈ 40% der nächsten Welt)
-- [ ] Phase 6 – Welt 3 + Welt 4
+- [x] **Phase 6** – Welt 3 (Sushi Harbor) + Welt 4 (Sweet Dreams), Balancing im ×1600-Raster gegengerechnet
 - [ ] Phase 7 – Polish: Achievements, Partikel, Sound-Hooks, Monetization-Stub
 
 ## Balancing-Regeln
