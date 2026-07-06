@@ -63,6 +63,7 @@ function mergeState(saved) {
     const savedWorld = saved.worlds?.[wid];
     if (!savedWorld) continue;
     if (savedWorld.unlocked) fresh.worlds[wid].unlocked = true;
+    if (savedWorld.managerHired) fresh.worlds[wid].managerHired = true;
 
     for (const sid in fresh.worlds[wid].stations) {
       const savedStation = savedWorld.stations?.[sid];

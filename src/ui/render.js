@@ -1,7 +1,7 @@
 import { gsap } from 'gsap';
 import { formatMoney, formatNumber } from '../utils/formatNumber.js';
 import { upgradeCost } from '../systems/costScaling.js';
-import { worldIncomePerSec } from '../systems/production.js';
+import { worldIncomePerSec, MANAGER_MULT } from '../systems/production.js';
 import { nextMilestoneLevel } from '../utils/formulas.js';
 import { STATIONS } from '../data/stations.js';
 import {
@@ -24,6 +24,7 @@ export function createUI(state, actions) {
     prev: document.getElementById('world-prev'),
     next: document.getElementById('world-next'),
     banner: document.getElementById('unlock-banner'),
+    manager: document.getElementById('manager-card'),
     list: document.getElementById('stations-list')
   };
 
@@ -45,6 +46,11 @@ export function createUI(state, actions) {
     if (n && !isWorldUnlocked(state, n.id) && state.money >= n.unlockCost) {
       actions.unlockWorld(n);
     }
+  });
+  el.manager.addEventListener('click', () => {
+    const w = worldCfgById(activeWorldId);
+    const ws = state.worlds[activeWorldId];
+    if (!ws.managerHired && state.money >= w.managerCost) actions.hireManager(w);
   });
 
   // (Neu-)Aufbau der Karten und Kopfzeile für eine Welt.
@@ -96,6 +102,7 @@ export function createUI(state, actions) {
     setText(el.goal, topCache, 'goal', nextGoalText(worldState));
 
     updateWorldNav();
+    updateManager(worldState);
 
     for (const cfg of stationCfgs) {
       const st = worldState.stations[cfg.id];
@@ -160,6 +167,32 @@ export function createUI(state, actions) {
   function setNav(btn, enabled) {
     btn.disabled = !enabled;
     btn.classList.toggle('active', enabled);
+  }
+
+  // Manager-Karte: einstellbar (mit Kosten) oder aktiv (Bonus-Anzeige).
+  function updateManager(worldState) {
+    const w = worldCfgById(activeWorldId);
+    if (worldState.managerHired) {
+      setText(el.manager, topCache, 'manager',
+        `👔 Manager aktiv · ×${MANAGER_MULT} Produktion · Auto-Trinkgeld`);
+      if (topCache.mgrState !== 'hired') {
+        topCache.mgrState = 'hired';
+        el.manager.disabled = true;
+        el.manager.classList.remove('ready');
+        el.manager.classList.add('hired');
+      }
+    } else {
+      const affordable = state.money >= w.managerCost;
+      setText(el.manager, topCache, 'manager',
+        `👔 Manager einstellen — ${formatMoney(w.managerCost)} (×${MANAGER_MULT} + Auto-Trinkgeld)`);
+      const key = affordable ? 'ready' : 'wait';
+      if (topCache.mgrState !== key) {
+        topCache.mgrState = key;
+        el.manager.disabled = !affordable;
+        el.manager.classList.toggle('ready', affordable);
+        el.manager.classList.remove('hired');
+      }
+    }
   }
 
   function nextGoalText(worldState) {

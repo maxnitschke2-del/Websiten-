@@ -12,6 +12,7 @@ export const WORLDS = [
     name: 'Burger Boulevard',
     signature: 'Classic Cheeseburger',
     unlockCost: 0,
+    managerCost: 1e8,
     palette: {
       sky: 0x9fd8ef,
       ground: 0xd7b98e,
@@ -33,6 +34,7 @@ export const WORLDS = [
     name: 'Taco Fiesta',
     signature: 'Street Taco Deluxe',
     unlockCost: 4.4e12,
+    managerCost: 1.6e11,
     palette: {
       sky: 0xffe0b2,
       ground: 0xe0b97d,
@@ -54,6 +56,7 @@ export const WORLDS = [
     name: 'Sushi Harbor',
     signature: 'Dragon Roll',
     unlockCost: 7.04e15,
+    managerCost: 2.56e14,
     palette: {
       sky: 0xb3e5fc,
       ground: 0x90a4ae,
@@ -75,6 +78,7 @@ export const WORLDS = [
     name: 'Sweet Dreams',
     signature: 'Rainbow Sundae',
     unlockCost: 1.1264e19,
+    managerCost: 4.096e17,
     palette: {
       sky: 0xf8bbd0,
       ground: 0xf3d9e5,

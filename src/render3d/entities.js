@@ -311,12 +311,22 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
 
     // Lebensdauer: nach Ablauf sanft ausblenden
     coin.userData.timeout = setTimeout(() => removeCoin(coin, false), TIP_COIN_LIFETIME * 1000);
+
+    // Manager: gemanagte Trucks sammeln das Trinkgeld automatisch ein.
+    if (hooks.isManaged && hooks.isManaged()) {
+      coin.userData.autoTimeout = setTimeout(() => {
+        if (!coin.userData.alive) return;
+        hooks.onTip(coin.userData.value, coin.getWorldPosition(new THREE.Vector3()));
+        removeCoin(coin, true);
+      }, 550);
+    }
   }
 
   function removeCoin(coin, collected) {
     if (!coin.userData.alive) return;
     coin.userData.alive = false;
     clearTimeout(coin.userData.timeout);
+    clearTimeout(coin.userData.autoTimeout);
     gsap.killTweensOf(coin.position);
     gsap.killTweensOf(coin.rotation);
     coins.delete(coin);
@@ -397,6 +407,7 @@ export function createEntitySystem(scene, camera, domElement, palette, layout, h
     }
     for (const coin of coins) {
       clearTimeout(coin.userData.timeout);
+      clearTimeout(coin.userData.autoTimeout);
       gsap.killTweensOf(coin.position);
       gsap.killTweensOf(coin.rotation);
       gsap.killTweensOf(coin.scale);

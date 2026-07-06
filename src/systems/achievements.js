@@ -29,6 +29,7 @@ export function buildSnapshot(state) {
   }
 
   const worldsUnlocked = WORLDS.filter((w) => state.worlds[w.id]?.unlocked).length;
+  const managersHired = WORLDS.filter((w) => state.worlds[w.id]?.managerHired).length;
 
   return {
     totalEarned: state.stats.totalEarned,
@@ -36,7 +37,8 @@ export function buildSnapshot(state) {
     stationsUnlocked,
     maxLevel,
     worldsUnlocked,
-    worldsMaxed
+    worldsMaxed,
+    managersHired
   };
 }
 

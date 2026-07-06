@@ -209,6 +209,36 @@ body {
   50% { transform: scale(1.02); }
 }
 
+/* ---------- Manager-Karte ---------- */
+#manager-card {
+  border: none;
+  border-radius: 12px;
+  padding: 11px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: #b9a88a;
+  cursor: default;
+  transition: transform 0.08s ease;
+}
+
+#manager-card.ready {
+  background: linear-gradient(90deg, #3a7bd5, #2b5876);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(43, 88, 118, 0.35);
+}
+
+#manager-card.ready:active {
+  transform: scale(0.98);
+}
+
+#manager-card.hired {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
 #stations-list {
   display: flex;
   flex-direction: column;

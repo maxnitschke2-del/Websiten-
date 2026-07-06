@@ -11,6 +11,7 @@ export const ACHIEVEMENTS = [
   { id: 'tip_master', name: 'Trinkgeld-Magnat', desc: 'Sammle 100 Trinkgelder ein', icon: '🤑', metric: 'tipsCollected', threshold: 100 },
   { id: 'halfway', name: 'Halbzeit', desc: 'Bringe eine Station auf Level 50', icon: '⭐', metric: 'maxLevel', threshold: 50 },
   { id: 'maxed_station', name: 'Ausgereizt', desc: 'Bringe eine Station auf Level 100', icon: '🌟', metric: 'maxLevel', threshold: 100 },
+  { id: 'boss', name: 'Chef im Haus', desc: 'Stelle einen Manager ein', icon: '👔', metric: 'managersHired', threshold: 1 },
   { id: 'new_kitchen', name: 'Neue Küche', desc: 'Schalte eine zweite Welt frei', icon: '🌮', metric: 'worldsUnlocked', threshold: 2 },
   { id: 'empire', name: 'Foodtruck-Imperium', desc: 'Schalte alle 4 Welten frei', icon: '🌍', metric: 'worldsUnlocked', threshold: 4 },
   { id: 'perfectionist', name: 'Perfektionist', desc: 'Baue eine ganze Welt komplett aus', icon: '🏆', metric: 'worldsMaxed', threshold: 1 }

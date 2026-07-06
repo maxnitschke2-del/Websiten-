@@ -17,6 +17,7 @@ export function createInitialState() {
     }
     worlds[world.id] = {
       unlocked: world.unlockCost === 0,
+      managerHired: false,
       stations
     };
   }

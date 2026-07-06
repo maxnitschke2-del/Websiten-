@@ -36,7 +36,7 @@ const particles = createParticleSystem(scene3d.scene);
 const sound = createSound(() => state.muted);
 const monetization = createMonetizationService();
 
-const ui = createUI(state, { buy, switchWorld, unlockWorld });
+const ui = createUI(state, { buy, switchWorld, unlockWorld, hireManager });
 
 // Die aktive Welt: 3D-Aufbau + belebte Szene. Beim Wechsel komplett neu gebaut.
 let active = null;
@@ -72,6 +72,7 @@ function activateWorld(worldId) {
       worldGroup: world3d.group,
       tableLayout: world3d.tableLayout,
       isUnlocked: (id) => state.worlds[worldId].stations[id].unlocked,
+      isManaged: () => state.worlds[worldId].managerHired,
       getIncomePerSec: () => worldIncomePerSec(stationCfgs, state.worlds[worldId]),
       onTip: collectTip
     }
@@ -138,6 +139,24 @@ function buy(stationId) {
   popStationMesh(active.world3d.stationMeshes[stationId]);
   sound.play('buy');
   particles.burst(stationTop(stationId), { color: 0x9be09e, count: 6, size: 0.7 });
+  checkAchievements();
+}
+
+// Manager für die aktive Welt einstellen: permanenter ×1.5-Produktionsbonus
+// + Auto-Trinkgeld für diesen Truck.
+function hireManager(worldCfg) {
+  const ws = state.worlds[state.currentWorld];
+  if (ws.managerHired || state.money < worldCfg.managerCost) return;
+  state.money -= worldCfg.managerCost;
+  ws.managerHired = true;
+  saveGame(state);
+  sound.play('unlock');
+  particles.burst(new THREE.Vector3(0, 3, 0), {
+    color: worldCfg.palette.accent,
+    count: 22,
+    power: 2.0,
+    size: 1.0
+  });
   checkAchievements();
 }
 
