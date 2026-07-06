@@ -110,12 +110,58 @@ function addCupcakeProps(station) {
   }
 }
 
+// Keks-Ofen: Backblech mit Cookies auf einem Ofen
+function addCookieProps(station) {
+  const oven = box(1.0, 0.7, 0.7, 0xe0e0e0, { metalness: 0.3, roughness: 0.5 });
+  oven.position.set(-0.55, 1.35, 0);
+  station.add(oven);
+  const window_ = box(0.6, 0.35, 0.05, 0x5a4633);
+  window_.position.set(-0.55, 1.35, 0.36);
+  station.add(window_);
+  const tray = box(1.0, 0.05, 0.6, 0x9aa0a6, { metalness: 0.4 });
+  tray.position.set(0.5, 1.22, 0.05);
+  station.add(tray);
+  for (let i = 0; i < 4; i++) {
+    const cookie = cylinder(0.13, 0.13, 0.06, 0xc68642, 12);
+    cookie.position.set(0.25 + (i % 2) * 0.4, 1.28, -0.1 + Math.floor(i / 2) * 0.3);
+    station.add(cookie);
+    const chip = sphere(0.03, 0x3a2416, 6);
+    chip.position.set(0.25 + (i % 2) * 0.4, 1.33, -0.1 + Math.floor(i / 2) * 0.3);
+    station.add(chip);
+  }
+}
+
+// Süßwaren-Stand: Gläser mit buntem Naschwerk + Lutscher
+function addCandyProps(station) {
+  const jarColors = [0xff8fab, 0x8ec7ff, 0xb5e48c];
+  jarColors.forEach((c, i) => {
+    const jar = cylinder(0.18, 0.18, 0.5, 0xdfefff, 12, {
+      transparent: true,
+      opacity: 0.55,
+      roughness: 0.2
+    });
+    jar.position.set(-0.5 + i * 0.5, 1.4, 0);
+    station.add(jar);
+    const candy = sphere(0.14, c, 10);
+    candy.position.set(-0.5 + i * 0.5, 1.35, 0);
+    station.add(candy);
+  });
+  const lolly = cylinder(0.02, 0.02, 0.4, 0xf1faee, 6);
+  lolly.position.set(0.6, 1.4, 0.2);
+  station.add(lolly);
+  const swirl = sphere(0.13, 0xff5d8f, 10);
+  swirl.position.set(0.6, 1.62, 0.2);
+  station.add(swirl);
+}
+
 export const world4Model = {
   emblem: sundaeEmblem,
   stationProps: {
     sundae: addSundaeProps,
     donuts: addDonutProps,
     shakes: addShakeProps,
-    cupcakes: addCupcakeProps
+    cookies: addCookieProps,
+    cupcakes: addCupcakeProps,
+    candy: addCandyProps
   }
 };

@@ -107,12 +107,49 @@ function addChurrosProps(station) {
   }
 }
 
+// Nachos-Stand: Schale mit Tortilla-Chips und Käse
+function addNachosProps(station) {
+  const bowl = cylinder(0.5, 0.36, 0.28, 0xb5462f, 14);
+  bowl.position.set(0, 1.32, 0.05);
+  station.add(bowl);
+  for (let i = 0; i < 6; i++) {
+    const chip = cone(0.16, 0.28, TORTILLA, 4);
+    const a = (i / 6) * Math.PI * 2;
+    chip.position.set(Math.cos(a) * 0.2, 1.55, 0.05 + Math.sin(a) * 0.14);
+    chip.rotation.set(0.4, a, Math.cos(a) * 0.3);
+    station.add(chip);
+  }
+  const cheese = sphere(0.16, 0xf4a261, 8);
+  cheese.scale.y = 0.5;
+  cheese.position.set(0, 1.6, 0.05);
+  station.add(cheese);
+}
+
+// Burrito-Rolle: gerollte Tortillas auf einem Brett
+function addBurritoProps(station) {
+  const board = box(1.8, 0.1, 0.9, 0x7a4f2a);
+  board.position.y = 1.2;
+  station.add(board);
+  for (let i = 0; i < 3; i++) {
+    const burrito = cylinder(0.17, 0.17, 0.7, TORTILLA, 12);
+    burrito.rotation.z = Math.PI / 2;
+    burrito.position.set(-0.5 + i * 0.5, 1.33, 0.05);
+    station.add(burrito);
+    const end = cylinder(0.17, 0.12, 0.1, 0xe0b97d, 12);
+    end.rotation.z = Math.PI / 2;
+    end.position.set(-0.5 + i * 0.5 + 0.4, 1.33, 0.05);
+    station.add(end);
+  }
+}
+
 export const world2Model = {
   emblem: tacoEmblem,
   stationProps: {
     griddle: addGriddleProps,
     salsa: addSalsaProps,
     aguas: addAguasProps,
-    churros: addChurrosProps
+    nachos: addNachosProps,
+    churros: addChurrosProps,
+    burrito: addBurritoProps
   }
 };

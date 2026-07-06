@@ -98,12 +98,49 @@ function addMochiProps(station) {
   });
 }
 
+// Ramen-Küche: dampfende Schüsseln mit Stäbchen
+function addRamenProps(station) {
+  for (let i = 0; i < 2; i++) {
+    const x = -0.4 + i * 0.8;
+    const bowl = cylinder(0.34, 0.24, 0.28, 0xbc4749, 14);
+    bowl.position.set(x, 1.32, 0.05);
+    station.add(bowl);
+    const broth = cylinder(0.3, 0.3, 0.06, 0xe9b949, 14);
+    broth.position.set(x, 1.46, 0.05);
+    station.add(broth);
+    const egg = sphere(0.09, 0xf6f7eb, 8);
+    egg.position.set(x - 0.1, 1.52, 0.05);
+    station.add(egg);
+    const chopstick = cylinder(0.02, 0.02, 0.4, 0x8a5a44, 6);
+    chopstick.rotation.z = 0.5;
+    chopstick.position.set(x + 0.1, 1.6, 0.1);
+    station.add(chopstick);
+  }
+}
+
+// Sake-Bar: Flasche mit kleinen Schälchen
+function addSakeProps(station) {
+  const bottle = cylinder(0.16, 0.2, 0.7, 0x2f3e2f, 12);
+  bottle.position.set(-0.5, 1.5, 0);
+  station.add(bottle);
+  const neck = cylinder(0.07, 0.09, 0.2, 0x2f3e2f, 8);
+  neck.position.set(-0.5, 1.9, 0);
+  station.add(neck);
+  for (let i = 0; i < 3; i++) {
+    const cup = cylinder(0.1, 0.08, 0.14, 0xf1faee, 10);
+    cup.position.set(0.25 + i * 0.32, 1.27, 0.12);
+    station.add(cup);
+  }
+}
+
 export const world3Model = {
   emblem: nigiriEmblem,
   stationProps: {
     rolls: addRollsProps,
     nigiri: addNigiriProps,
     tea: addTeaProps,
-    mochi: addMochiProps
+    ramen: addRamenProps,
+    mochi: addMochiProps,
+    sake: addSakeProps
   }
 };

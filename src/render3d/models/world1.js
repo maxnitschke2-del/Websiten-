@@ -96,12 +96,49 @@ function addIceCreamProps(station) {
   });
 }
 
+function addHotdogProps(station) {
+  const griddle = box(1.6, 0.14, 0.85, 0x343a40, { metalness: 0.5, roughness: 0.4 });
+  griddle.position.y = 1.22;
+  station.add(griddle);
+  for (let i = 0; i < 3; i++) {
+    const bun = box(0.5, 0.16, 0.24, 0xe9c46a);
+    bun.position.set(-0.5 + i * 0.5, 1.35, 0.05);
+    station.add(bun);
+    const sausage = cylinder(0.07, 0.07, 0.5, 0xb5462f, 8);
+    sausage.rotation.z = Math.PI / 2;
+    sausage.position.set(-0.5 + i * 0.5, 1.45, 0.05);
+    station.add(sausage);
+  }
+}
+
+function addShakeProps(station) {
+  const blender = box(0.7, 0.7, 0.6, 0xadb5bd, { metalness: 0.4, roughness: 0.4 });
+  blender.position.set(-0.6, 1.45, 0);
+  station.add(blender);
+  const shakeColors = [0xffb3c6, 0xd4a373, 0xcdb4db];
+  shakeColors.forEach((c, i) => {
+    const cup = cylinder(0.15, 0.12, 0.4, c, 12);
+    cup.position.set(0.25 + i * 0.34, 1.32, 0.12);
+    station.add(cup);
+    const cream = sphere(0.16, 0xfff8f0, 10);
+    cream.scale.y = 0.65;
+    cream.position.set(0.25 + i * 0.34, 1.54, 0.12);
+    station.add(cream);
+    const straw = cylinder(0.022, 0.022, 0.3, 0xff5d8f, 6);
+    straw.position.set(0.29 + i * 0.34, 1.62, 0.12);
+    straw.rotation.z = 0.22;
+    station.add(straw);
+  });
+}
+
 export const world1Model = {
   emblem: burgerEmblem,
   stationProps: {
     grill: addGrillProps,
     fries: addFriesProps,
     drinks: addDrinkProps,
-    icecream: addIceCreamProps
+    hotdog: addHotdogProps,
+    icecream: addIceCreamProps,
+    shake: addShakeProps
   }
 };

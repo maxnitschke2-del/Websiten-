@@ -5,7 +5,7 @@ import * as THREE from 'three';
 // So bleiben die zugrunde liegenden Systeme (Layout, Kamera-Rahmen, Freischalten)
 // über alle Welten identisch.
 
-export const STATION_SPACING = 3.4;
+export const STATION_SPACING = 3.0;
 export const STATION_Z = 1.2;
 export const TRUCK_Z = -3.4;
 
