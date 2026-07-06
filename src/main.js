@@ -3,10 +3,11 @@ import { WORLDS } from './data/worlds.js';
 import { STATIONS } from './data/stations.js';
 import { createInitialState } from './core/gameState.js';
 import { startLoop } from './core/gameLoop.js';
-import { tickProduction } from './systems/production.js';
+import { tickProduction, worldIncomePerSec } from './systems/production.js';
 import { upgradeCost } from './systems/costScaling.js';
 import { createScene } from './render3d/scene.js';
 import { buildWorld1, swapToUnlockedStation } from './render3d/models/world1.js';
+import { createEntitySystem } from './render3d/entities.js';
 import { createUI } from './ui/render.js';
 
 const state = createInitialState();
@@ -22,6 +23,34 @@ const world3d = buildWorld1(
   state.worlds[worldCfg.id].stations
 );
 scene3d.setFrameBox(world3d.frameBounds);
+
+const worldState = () => state.worlds[state.currentWorld];
+const currentIncome = () =>
+  worldIncomePerSec(stationCfgs, worldState());
+
+// Belebte Szene: Personal, Kunden, Tap-to-Collect-Trinkgeld.
+const entities = createEntitySystem(
+  scene3d.scene,
+  scene3d.camera,
+  scene3d.renderer.domElement,
+  worldCfg.palette,
+  world3d.stationLayout,
+  {
+    worldGroup: world3d.group,
+    isUnlocked: (id) => worldState().stations[id].unlocked,
+    getIncomePerSec: currentIncome,
+    onTip: collectTip
+  }
+);
+// Personal an bereits freigeschalteten Stationen aufstellen.
+for (const cfg of stationCfgs) {
+  if (worldState().stations[cfg.id].unlocked) entities.addWorker(cfg.id);
+}
+
+function collectTip(amount) {
+  state.money += amount;
+  ui.pulseMoney();
+}
 
 const ui = createUI(state, worldCfg, stationCfgs, { buy });
 
@@ -44,6 +73,7 @@ function buy(stationId) {
       stationId,
       worldCfg.palette
     );
+    entities.addWorker(stationId);
     ui.flashCard(stationId);
     popStationMesh(mesh);
     return;
@@ -76,7 +106,10 @@ if (import.meta.env.DEV) {
 }
 
 startLoop(
-  (dt) => tickProduction(state, stationCfgs, dt),
+  (dt) => {
+    tickProduction(state, stationCfgs, dt);
+    entities.update(dt);
+  },
   () => {
     ui.update();
     scene3d.render();

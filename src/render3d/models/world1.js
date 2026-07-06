@@ -7,6 +7,13 @@ const STATION_SPACING = 3.4;
 const STATION_Z = 1.2;
 const TRUCK_Z = -3.4;
 
+// Anker für Personal (hinter der Theke) und Kunden (davor, auf dem Gehweg).
+// Personal steht klar hinter dem Tresen, wo keine Aufbauten verdecken.
+export const WORKER_DZ = -1.0; // relativ zur Station: hinter dem Tresen
+export const CUSTOMER_DZ = 1.35; // davor auf dem Gehweg
+export const SIDEWALK_Z = STATION_Z + CUSTOMER_DZ;
+export const STREET_Z = 4.2;
+
 function mat(color, opts = {}) {
   return new THREE.MeshStandardMaterial({
     color,
@@ -39,6 +46,7 @@ export function buildWorld1(scene, palette, stationCfgs, worldStationState) {
   buildTruck(group, palette);
 
   const stationMeshes = {};
+  const stationLayout = [];
   const count = stationCfgs.length;
   stationCfgs.forEach((cfg, i) => {
     const x = (i - (count - 1) / 2) * STATION_SPACING;
@@ -49,6 +57,12 @@ export function buildWorld1(scene, palette, stationCfgs, worldStationState) {
     station.position.set(x, 0, STATION_Z);
     group.add(station);
     stationMeshes[cfg.id] = station;
+    stationLayout.push({
+      id: cfg.id,
+      x,
+      workerZ: STATION_Z + WORKER_DZ,
+      customerZ: SIDEWALK_Z
+    });
   });
 
   scene.add(group);
@@ -60,7 +74,7 @@ export function buildWorld1(scene, palette, stationCfgs, worldStationState) {
     new THREE.Vector3((count / 2) * STATION_SPACING + 1.4, 3.6, STATION_Z + 3.4)
   );
 
-  return { group, stationMeshes, frameBounds };
+  return { group, stationMeshes, stationLayout, frameBounds };
 }
 
 // Ersetzt eine gesperrte Station durch die gebaute Variante (Phase 2).

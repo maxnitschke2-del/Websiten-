@@ -122,5 +122,14 @@ export function createUI(state, worldCfg, stationCfgs, actions) {
     );
   }
 
-  return { update, flashCard };
+  // Kurzer Puls des Geld-Zählers, wenn Trinkgeld eingesammelt wird.
+  function pulseMoney() {
+    gsap.fromTo(
+      el.money,
+      { scale: 1.25, color: '#ffd23f' },
+      { scale: 1, color: '#ffffff', duration: 0.4, ease: 'power2.out', clearProps: 'color,scale' }
+    );
+  }
+
+  return { update, flashCard, pulseMoney };
 }

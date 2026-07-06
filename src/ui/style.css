@@ -51,6 +51,11 @@ body {
   font-weight: 700;
 }
 
+#money {
+  display: inline-block;
+  transform-origin: left center;
+}
+
 #income {
   font-size: 0.85rem;
   font-weight: 600;

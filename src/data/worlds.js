@@ -23,7 +23,9 @@ export const WORLDS = [
       awning: 0xffd166,
       counter: 0x8a5a44,
       counterTop: 0xf4e8d1,
-      accent: 0xff7043
+      accent: 0xff7043,
+      workerColor: 0xd64545,
+      customerColors: [0x5c7aea, 0xe4572e, 0x76b041, 0xf7b32b, 0x9d4edd, 0x3aafa9]
     }
   },
   {
@@ -42,7 +44,9 @@ export const WORLDS = [
       awning: 0xe76f51,
       counter: 0x7a4f2a,
       counterTop: 0xfdf0d5,
-      accent: 0xf4a261
+      accent: 0xf4a261,
+      workerColor: 0x2a6f97,
+      customerColors: [0xe76f51, 0x2a9d8f, 0xe9c46a, 0x8ab17d, 0xbc4749, 0x6d597a]
     }
   },
   {
@@ -61,7 +65,9 @@ export const WORLDS = [
       awning: 0xe63946,
       counter: 0x5c4033,
       counterTop: 0xf1faee,
-      accent: 0x457b9d
+      accent: 0x457b9d,
+      workerColor: 0x1d3557,
+      customerColors: [0x457b9d, 0xe63946, 0x2b9348, 0xf3722c, 0x7209b7, 0x118ab2]
     }
   },
   {
@@ -80,7 +86,9 @@ export const WORLDS = [
       awning: 0xb388eb,
       counter: 0x9d6b53,
       counterTop: 0xfff0f6,
-      accent: 0xf48fb1
+      accent: 0xf48fb1,
+      workerColor: 0xc4548e,
+      customerColors: [0xf48fb1, 0x9575cd, 0x4fc3f7, 0xaed581, 0xffb74d, 0xba68c8]
     }
   }
 ];
